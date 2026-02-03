@@ -2,10 +2,12 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:WpfAppGraph.Views"
+             xmlns:converters="clr-namespace:WpfAppGraph.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+
     <UserControl.Resources>
         <!-- Стиль для кнопок инструментов -->
         <Style x:Key="ToolButtonStyle" TargetType="RadioButton">
@@ -15,52 +17,8 @@
             <Setter Property="GroupName" Value="DrawingTools"/>
         </Style>
 
-        <!-- Стиль для вершин на холсте -->
-        <Style x:Key="VertexStyle" TargetType="Ellipse">
-            <Setter Property="Width" Value="40"/>
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="Stroke" Value="Black"/>
-            <Setter Property="StrokeThickness" Value="2"/>
-            <Setter Property="Fill" Value="LightBlue"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-
-        <!-- Стиль для выбранной вершины -->
-        <Style x:Key="SelectedVertexStyle" TargetType="Ellipse" BasedOn="{StaticResource VertexStyle}">
-            <Setter Property="Fill" Value="Gold"/>
-            <Setter Property="Stroke" Value="DarkOrange"/>
-            <Setter Property="StrokeThickness" Value="3"/>
-        </Style>
-
-        <!-- Стиль для целевой вершины -->
-        <Style x:Key="TargetVertexStyle" TargetType="Ellipse" BasedOn="{StaticResource VertexStyle}">
-            <Setter Property="Fill" Value="LightGreen"/>
-            <Setter Property="Stroke" Value="DarkGreen"/>
-        </Style>
-
-        <!-- DataTemplate для вершины -->
-        <DataTemplate x:Key="VertexTemplate">
-            <Grid>
-                <Ellipse Style="{StaticResource VertexStyle}"/>
-                <TextBlock Text="{Binding Label}" 
-                           HorizontalAlignment="Center" 
-                           VerticalAlignment="Center"
-                           FontWeight="Bold"/>
-            </Grid>
-        </DataTemplate>
-
-        <!-- Стиль для ребер -->
-        <Style x:Key="EdgeStyle" TargetType="Line">
-            <Setter Property="Stroke" Value="Black"/>
-            <Setter Property="StrokeThickness" Value="2"/>
-        </Style>
-
-        <!-- Стиль для ориентированного ребра (со стрелкой) -->
-        <Style x:Key="DirectedEdgeStyle" TargetType="Path">
-            <Setter Property="Stroke" Value="Black"/>
-            <Setter Property="StrokeThickness" Value="2"/>
-            <Setter Property="Fill" Value="Black"/>
-        </Style>
+        <!-- Конвертер для Enum к bool (для RadioButton) -->
+        <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
     </UserControl.Resources>
 
     <Grid>
@@ -86,18 +44,17 @@
                            FontWeight="SemiBold" 
                            Margin="0,10,0,5"/>
 
-                <RadioButton x:Name="AddVertexModeBtn" 
-                             Content="Добавить вершину" 
+                <RadioButton Content="Добавить вершину" 
                              Style="{StaticResource ToolButtonStyle}"
-                             IsChecked="True"/>
+                             IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AddVertex}"/>
 
-                <RadioButton x:Name="AddEdgeModeBtn" 
-                             Content="Добавить ребро" 
-                             Style="{StaticResource ToolButtonStyle}"/>
+                <RadioButton Content="Добавить ребро" 
+                             Style="{StaticResource ToolButtonStyle}"
+                             IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AddEdge}"/>
 
-                <RadioButton x:Name="SetTargetModeBtn" 
-                             Content="Назначить цель" 
-                             Style="{StaticResource ToolButtonStyle}"/>
+                <RadioButton Content="Назначить цель" 
+                             Style="{StaticResource ToolButtonStyle}"
+                             IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=SetTarget}"/>
 
                 <!-- Панель информации о графе -->
                 <Border Margin="0,20,0,0" 
@@ -107,22 +64,16 @@
                         BorderThickness="1"
                         CornerRadius="5">
                     <StackPanel>
-                        <TextBlock Text="Информация о графе:" 
-                                   FontWeight="SemiBold" 
-                                   Margin="0,0,0,5"/>
-                        <TextBlock Text="Вершин: 0" 
-                                   x:Name="VertexCountText"/>
-                        <TextBlock Text="Рёбер: 0" 
-                                   x:Name="EdgeCountText"/>
-                        <TextBlock Text="Целевая вершина: не задана" 
-                                   x:Name="TargetVertexText"
+                        <TextBlock Text="{Binding VertexCount, StringFormat='Вершин: {0}'}"/>
+                        <TextBlock Text="{Binding EdgeCount, StringFormat='Рёбер: {0}'}"/>
+                        <TextBlock Text="{Binding TargetVertexInfo, StringFormat='Целевая вершина: {0}'}" 
                                    TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
                 <!-- Кнопка сброса -->
-                <Button x:Name="ResetGraphBtn" 
-                        Content="Сбросить граф" 
+                <Button Content="Сбросить граф" 
+                        Command="{Binding ResetGraphCommand}"
                         Width="120" 
                         Height="35" 
                         Margin="5,20,5,5"
@@ -154,112 +105,12 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Холст для отрисовки графа -->
+            <!-- Графовый холст -->
             <Border Grid.Row="1" 
                     Background="White" 
                     BorderBrush="LightGray" 
                     BorderThickness="1">
-                <Grid>
-                    <!-- Вспомогательная сетка (опционально) -->
-                    <Canvas x:Name="GridCanvas" 
-                            IsHitTestVisible="False">
-                        <!-- Сетка будет добавляться через код -->
-                    </Canvas>
-
-                    <!-- Основной холст для графа -->
-                    <Canvas x:Name="GraphCanvas"
-                            Background="Transparent"
-                            MouseDown="GraphCanvas_MouseDown">
-
-                        <!-- Здесь будут отображаться ребра -->
-                        <ItemsControl x:Name="EdgesContainer">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <Canvas/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-
-                        <!-- Здесь будут отображаться вершины -->
-                        <ItemsControl x:Name="VerticesContainer">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <Canvas/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <!-- Контейнер для вершины с возможностью перетаскивания -->
-                                    <ContentControl Content="{Binding}"
-                                                    Canvas.Left="{Binding X, Mode=TwoWay}"
-                                                    Canvas.Top="{Binding Y, Mode=TwoWay}"
-                                                    MouseDown="Vertex_MouseDown"
-                                                    MouseMove="Vertex_MouseMove"
-                                                    MouseUp="Vertex_MouseUp"
-                                                    Cursor="Hand">
-                                        <ContentControl.ContentTemplate>
-                                            <DataTemplate>
-                                                <Grid>
-                                                    <!-- Основной круг вершины -->
-                                                    <Ellipse x:Name="VertexCircle"
-                                                             Width="40"
-                                                             Height="40"
-                                                             Stroke="Black"
-                                                             StrokeThickness="2"
-                                                             Fill="LightBlue"/>
-
-                                                    <!-- Метка вершины -->
-                                                    <TextBlock Text="{Binding Label}"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center"
-                                                               FontWeight="Bold"/>
-
-                                                    <!-- Индикатор времени для DFS (будет скрыт по умолчанию) -->
-                                                    <StackPanel x:Name="TimeIndicator"
-                                                                VerticalAlignment="Top"
-                                                                HorizontalAlignment="Left"
-                                                                Margin="-15,-15,0,0"
-                                                                Visibility="Collapsed">
-                                                        <TextBlock Text="Вход:" 
-                                                                   FontSize="8"
-                                                                   HorizontalAlignment="Center"/>
-                                                        <TextBlock x:Name="EntryTimeText"
-                                                                   Text="0"
-                                                                   FontSize="10"
-                                                                   FontWeight="Bold"
-                                                                   HorizontalAlignment="Center"/>
-                                                        <TextBlock Text="Выход:" 
-                                                                   FontSize="8"
-                                                                   HorizontalAlignment="Center"/>
-                                                        <TextBlock x:Name="ExitTimeText"
-                                                                   Text="0"
-                                                                   FontSize="10"
-                                                                   FontWeight="Bold"
-                                                                   HorizontalAlignment="Center"/>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ContentControl.ContentTemplate>
-                                    </ContentControl>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <!-- Временное ребро при создании (для визуальной обратной связи) -->
-                        <Line x:Name="TempEdgeLine" 
-                              Stroke="Gray" 
-                              StrokeThickness="2" 
-                              StrokeDashArray="5,2"
-                              Visibility="Collapsed"/>
-
-                        <!-- Временная стрелка для ориентированного ребра -->
-                        <Path x:Name="TempEdgeArrow" 
-                              Stroke="Gray" 
-                              StrokeThickness="2" 
-                              Fill="Gray"
-                              Visibility="Collapsed"/>
-                    </Canvas>
-                </Grid>
+                <local:GraphCanvasControl DataContext="{Binding GraphCanvas}"/>
             </Border>
         </Grid>
     </Grid>

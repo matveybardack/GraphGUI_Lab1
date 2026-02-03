@@ -1,0 +1,154 @@
+﻿<UserControl x:Class="WpfAppGraph.Views.GraphCanvasControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WpfAppGraph.Views"
+             xmlns:converters="clr-namespace:WpfAppGraph.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <!-- Конвертеры для состояний -->
+        <converters:VertexStateToBrushConverter x:Key="VertexStateToBrushConverter"/>
+        <converters:VertexStateToBorderBrushConverter x:Key="VertexStateToBorderBrushConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:EdgeTypeToBrushConverter x:Key="EdgeTypeToBrushConverter"/>
+
+        <!-- Стили для вершин -->
+        <Style x:Key="BaseVertexStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="StrokeThickness" Value="2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <!-- Стиль для ребер -->
+        <Style x:Key="BaseEdgeStyle" TargetType="Line">
+            <Setter Property="StrokeThickness" Value="2"/>
+            <Setter Property="StrokeEndLineCap" Value="Round"/>
+        </Style>
+
+        <!-- Шаблон для вершины -->
+        <DataTemplate x:Key="VertexTemplate">
+            <Grid>
+                <!-- Основной круг вершины -->
+                <Ellipse x:Name="VertexCircle"
+                         Style="{StaticResource BaseVertexStyle}"
+                         Stroke="{Binding State, Converter={StaticResource VertexStateToBorderBrushConverter}}"
+                         Fill="{Binding State, Converter={StaticResource VertexStateToBrushConverter}}"/>
+
+                <!-- Метка вершины -->
+                <TextBlock Text="{Binding Label}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"
+                           Foreground="Black"/>
+
+                <!-- Индикатор времени для DFS -->
+                <StackPanel x:Name="TimeIndicator"
+                            VerticalAlignment="Top"
+                            HorizontalAlignment="Left"
+                            Margin="-20,-20,0,0"
+                            Visibility="{Binding ShowTimeLabels, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal" Background="#80FFFFFF">
+                        <TextBlock Text="[" FontSize="8"/>
+                        <TextBlock Text="{Binding EntryTime}" FontSize="9" FontWeight="Bold"/>
+                        <TextBlock Text="," FontSize="8"/>
+                        <TextBlock Text="{Binding ExitTime}" FontSize="9" FontWeight="Bold"/>
+                        <TextBlock Text="]" FontSize="8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <!-- Шаблон для ребра -->
+        <DataTemplate x:Key="EdgeTemplate">
+            <Grid>
+                <!-- Линия ребра -->
+                <Line x:Name="EdgeLine"
+                      X1="{Binding X1}"
+                      Y1="{Binding Y1}"
+                      X2="{Binding X2}"
+                      Y2="{Binding Y2}"
+                      Style="{StaticResource BaseEdgeStyle}"
+                      Stroke="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"/>
+
+                <!-- Стрелка для ориентированного ребра -->
+                <Path x:Name="EdgeArrow"
+                      Data="{Binding ArrowGeometry}"
+                      Stroke="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
+                      Fill="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
+                      Visibility="{Binding IsDirected, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                <!-- Вес ребра (по середине) -->
+                <TextBlock Text="{Binding Weight, StringFormat={}{0:F1}}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Background="White"
+                           Padding="2,1"
+                           FontWeight="Bold"
+                           FontSize="10">
+                    <TextBlock.RenderTransform>
+                        <TranslateTransform X="{Binding LabelX}" Y="{Binding LabelY}"/>
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <!-- Основной контейнер -->
+    <Grid>
+        <!-- Холст для графа -->
+        <Canvas x:Name="MainCanvas" Background="White">
+
+            <!-- Слой для ребер -->
+            <ItemsControl x:Name="EdgesContainer"
+                          ItemsSource="{Binding Edges}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ContentControl Content="{Binding}"
+                                        ContentTemplate="{StaticResource EdgeTemplate}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Слой для вершин -->
+            <ItemsControl x:Name="VerticesContainer"
+                          ItemsSource="{Binding Vertices}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ContentControl Content="{Binding}"
+                                        Canvas.Left="{Binding X}"
+                                        Canvas.Top="{Binding Y}"
+                                        ContentTemplate="{StaticResource VertexTemplate}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Временное ребро при создании (визуальная обратная связь) -->
+            <Line x:Name="TempEdgeLine"
+                  Stroke="Gray"
+                  StrokeThickness="2"
+                  StrokeDashArray="5,2"
+                  Visibility="Collapsed"/>
+
+            <!-- Временная стрелка -->
+            <Path x:Name="TempEdgeArrow"
+                  Stroke="Gray"
+                  StrokeThickness="2"
+                  Fill="Gray"
+                  Visibility="Collapsed"/>
+
+        </Canvas>
+    </Grid>
+</UserControl>
