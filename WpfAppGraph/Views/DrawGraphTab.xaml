@@ -1,0 +1,266 @@
+﻿<UserControl x:Class="WpfAppGraph.Views.DrawGraphTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WpfAppGraph.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <!-- Стиль для кнопок инструментов -->
+        <Style x:Key="ToolButtonStyle" TargetType="RadioButton">
+            <Setter Property="Width" Value="125"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="5,2"/>
+            <Setter Property="GroupName" Value="DrawingTools"/>
+        </Style>
+
+        <!-- Стиль для вершин на холсте -->
+        <Style x:Key="VertexStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Stroke" Value="Black"/>
+            <Setter Property="StrokeThickness" Value="2"/>
+            <Setter Property="Fill" Value="LightBlue"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <!-- Стиль для выбранной вершины -->
+        <Style x:Key="SelectedVertexStyle" TargetType="Ellipse" BasedOn="{StaticResource VertexStyle}">
+            <Setter Property="Fill" Value="Gold"/>
+            <Setter Property="Stroke" Value="DarkOrange"/>
+            <Setter Property="StrokeThickness" Value="3"/>
+        </Style>
+
+        <!-- Стиль для целевой вершины -->
+        <Style x:Key="TargetVertexStyle" TargetType="Ellipse" BasedOn="{StaticResource VertexStyle}">
+            <Setter Property="Fill" Value="LightGreen"/>
+            <Setter Property="Stroke" Value="DarkGreen"/>
+        </Style>
+
+        <!-- DataTemplate для вершины -->
+        <DataTemplate x:Key="VertexTemplate">
+            <Grid>
+                <Ellipse Style="{StaticResource VertexStyle}"/>
+                <TextBlock Text="{Binding Label}" 
+                           HorizontalAlignment="Center" 
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"/>
+            </Grid>
+        </DataTemplate>
+
+        <!-- Стиль для ребер -->
+        <Style x:Key="EdgeStyle" TargetType="Line">
+            <Setter Property="Stroke" Value="Black"/>
+            <Setter Property="StrokeThickness" Value="2"/>
+        </Style>
+
+        <!-- Стиль для ориентированного ребра (со стрелкой) -->
+        <Style x:Key="DirectedEdgeStyle" TargetType="Path">
+            <Setter Property="Stroke" Value="Black"/>
+            <Setter Property="StrokeThickness" Value="2"/>
+            <Setter Property="Fill" Value="Black"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Панель инструментов слева -->
+        <Border Grid.Column="0" 
+                BorderBrush="LightGray" 
+                BorderThickness="0,0,1,0"
+                Background="WhiteSmoke"
+                Width="170">
+            <StackPanel Margin="10">
+                <TextBlock Text="Инструменты" 
+                           FontSize="16" 
+                           FontWeight="Bold" 
+                           Margin="0,0,0,10"/>
+
+                <!-- Группа инструментов для работы с графом -->
+                <TextBlock Text="Режим работы:" 
+                           FontWeight="SemiBold" 
+                           Margin="0,10,0,5"/>
+
+                <RadioButton x:Name="AddVertexModeBtn" 
+                             Content="Добавить вершину" 
+                             Style="{StaticResource ToolButtonStyle}"
+                             IsChecked="True"/>
+
+                <RadioButton x:Name="AddEdgeModeBtn" 
+                             Content="Добавить ребро" 
+                             Style="{StaticResource ToolButtonStyle}"/>
+
+                <RadioButton x:Name="SetTargetModeBtn" 
+                             Content="Назначить цель" 
+                             Style="{StaticResource ToolButtonStyle}"/>
+
+                <!-- Панель информации о графе -->
+                <Border Margin="0,20,0,0" 
+                        Padding="10" 
+                        Background="White" 
+                        BorderBrush="LightGray" 
+                        BorderThickness="1"
+                        CornerRadius="5">
+                    <StackPanel>
+                        <TextBlock Text="Информация о графе:" 
+                                   FontWeight="SemiBold" 
+                                   Margin="0,0,0,5"/>
+                        <TextBlock Text="Вершин: 0" 
+                                   x:Name="VertexCountText"/>
+                        <TextBlock Text="Рёбер: 0" 
+                                   x:Name="EdgeCountText"/>
+                        <TextBlock Text="Целевая вершина: не задана" 
+                                   x:Name="TargetVertexText"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Кнопка сброса -->
+                <Button x:Name="ResetGraphBtn" 
+                        Content="Сбросить граф" 
+                        Width="120" 
+                        Height="35" 
+                        Margin="5,20,5,5"
+                        Background="LightCoral"
+                        Foreground="DarkRed"
+                        FontWeight="Bold"
+                        BorderBrush="DarkRed"
+                        BorderThickness="1"
+                        Cursor="Hand">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3">
+                                <ContentPresenter HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- Основной холст для рисования графа -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Холст для отрисовки графа -->
+            <Border Grid.Row="1" 
+                    Background="White" 
+                    BorderBrush="LightGray" 
+                    BorderThickness="1">
+                <Grid>
+                    <!-- Вспомогательная сетка (опционально) -->
+                    <Canvas x:Name="GridCanvas" 
+                            IsHitTestVisible="False">
+                        <!-- Сетка будет добавляться через код -->
+                    </Canvas>
+
+                    <!-- Основной холст для графа -->
+                    <Canvas x:Name="GraphCanvas"
+                            Background="Transparent"
+                            MouseDown="GraphCanvas_MouseDown">
+
+                        <!-- Здесь будут отображаться ребра -->
+                        <ItemsControl x:Name="EdgesContainer">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+
+                        <!-- Здесь будут отображаться вершины -->
+                        <ItemsControl x:Name="VerticesContainer">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- Контейнер для вершины с возможностью перетаскивания -->
+                                    <ContentControl Content="{Binding}"
+                                                    Canvas.Left="{Binding X, Mode=TwoWay}"
+                                                    Canvas.Top="{Binding Y, Mode=TwoWay}"
+                                                    MouseDown="Vertex_MouseDown"
+                                                    MouseMove="Vertex_MouseMove"
+                                                    MouseUp="Vertex_MouseUp"
+                                                    Cursor="Hand">
+                                        <ContentControl.ContentTemplate>
+                                            <DataTemplate>
+                                                <Grid>
+                                                    <!-- Основной круг вершины -->
+                                                    <Ellipse x:Name="VertexCircle"
+                                                             Width="40"
+                                                             Height="40"
+                                                             Stroke="Black"
+                                                             StrokeThickness="2"
+                                                             Fill="LightBlue"/>
+
+                                                    <!-- Метка вершины -->
+                                                    <TextBlock Text="{Binding Label}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               FontWeight="Bold"/>
+
+                                                    <!-- Индикатор времени для DFS (будет скрыт по умолчанию) -->
+                                                    <StackPanel x:Name="TimeIndicator"
+                                                                VerticalAlignment="Top"
+                                                                HorizontalAlignment="Left"
+                                                                Margin="-15,-15,0,0"
+                                                                Visibility="Collapsed">
+                                                        <TextBlock Text="Вход:" 
+                                                                   FontSize="8"
+                                                                   HorizontalAlignment="Center"/>
+                                                        <TextBlock x:Name="EntryTimeText"
+                                                                   Text="0"
+                                                                   FontSize="10"
+                                                                   FontWeight="Bold"
+                                                                   HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="Выход:" 
+                                                                   FontSize="8"
+                                                                   HorizontalAlignment="Center"/>
+                                                        <TextBlock x:Name="ExitTimeText"
+                                                                   Text="0"
+                                                                   FontSize="10"
+                                                                   FontWeight="Bold"
+                                                                   HorizontalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ContentControl.ContentTemplate>
+                                    </ContentControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Временное ребро при создании (для визуальной обратной связи) -->
+                        <Line x:Name="TempEdgeLine" 
+                              Stroke="Gray" 
+                              StrokeThickness="2" 
+                              StrokeDashArray="5,2"
+                              Visibility="Collapsed"/>
+
+                        <!-- Временная стрелка для ориентированного ребра -->
+                        <Path x:Name="TempEdgeArrow" 
+                              Stroke="Gray" 
+                              StrokeThickness="2" 
+                              Fill="Gray"
+                              Visibility="Collapsed"/>
+                    </Canvas>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
