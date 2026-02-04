@@ -9,6 +9,9 @@
              d:DesignHeight="450" d:DesignWidth="800">
 
     <UserControl.Resources>
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+        <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
+
         <!-- Стиль для кнопок инструментов -->
         <Style x:Key="ToolButtonStyle" TargetType="RadioButton">
             <Setter Property="Width" Value="125"/>
@@ -16,102 +19,44 @@
             <Setter Property="Margin" Value="5,2"/>
             <Setter Property="GroupName" Value="DrawingTools"/>
         </Style>
-
-        <!-- Конвертер для Enum к bool (для RadioButton) -->
-        <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
     </UserControl.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="180"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Панель инструментов слева -->
-        <Border Grid.Column="0" 
-                BorderBrush="LightGray" 
-                BorderThickness="0,0,1,0"
-                Background="WhiteSmoke"
-                Width="170">
+        <!-- Левая панель инструментов -->
+        <Border Grid.Column="0" Background="#f8f9fa" BorderBrush="LightGray" BorderThickness="0,0,1,0">
             <StackPanel Margin="10">
-                <TextBlock Text="Инструменты" 
-                           FontSize="16" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,10"/>
+                <TextBlock Text="ГРАФ" FontSize="20" FontWeight="Black" Margin="0,0,0,20" Foreground="#2c3e50"/>
 
-                <!-- Группа инструментов для работы с графом -->
-                <TextBlock Text="Режим работы:" 
-                           FontWeight="SemiBold" 
-                           Margin="0,10,0,5"/>
+                <RadioButton Content="Вершина" IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AddVertex}" Style="{StaticResource ToolButtonStyle}"/>
+                <RadioButton Content="Ребро" IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AddEdge}" Style="{StaticResource ToolButtonStyle}"/>
+                <RadioButton Content="Целевая" IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=SetTarget}" Style="{StaticResource ToolButtonStyle}"/>
 
-                <RadioButton Content="Добавить вершину" 
-                             Style="{StaticResource ToolButtonStyle}"
-                             IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AddVertex}"/>
+                <Separator Margin="0,20"/>
 
-                <RadioButton Content="Добавить ребро" 
-                             Style="{StaticResource ToolButtonStyle}"
-                             IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AddEdge}"/>
+                <TextBlock Text="Статистика:" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBlock Text="{Binding VertexCount, StringFormat='Узлов: {0}'}"/>
+                <TextBlock Text="{Binding EdgeCount, StringFormat='Ребер: {0}'}"/>
 
-                <RadioButton Content="Назначить цель" 
-                             Style="{StaticResource ToolButtonStyle}"
-                             IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=SetTarget}"/>
-
-                <!-- Панель информации о графе -->
-                <Border Margin="0,20,0,0" 
-                        Padding="10" 
-                        Background="White" 
-                        BorderBrush="LightGray" 
-                        BorderThickness="1"
-                        CornerRadius="5">
-                    <StackPanel>
-                        <TextBlock Text="{Binding VertexCount, StringFormat='Вершин: {0}'}"/>
-                        <TextBlock Text="{Binding EdgeCount, StringFormat='Рёбер: {0}'}"/>
-                        <TextBlock Text="{Binding TargetVertexInfo, StringFormat='Целевая вершина: {0}'}" 
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Кнопка сброса -->
-                <Button Content="Сбросить граф" 
-                        Command="{Binding ResetGraphCommand}"
-                        Width="120" 
-                        Height="35" 
-                        Margin="5,20,5,5"
-                        Background="LightCoral"
-                        Foreground="DarkRed"
-                        FontWeight="Bold"
-                        BorderBrush="DarkRed"
-                        BorderThickness="1"
-                        Cursor="Hand">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="3">
-                                <ContentPresenter HorizontalAlignment="Center" 
-                                                  VerticalAlignment="Center"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
+                <Button Content="Очистить" Command="{Binding ResetGraphCommand}" Margin="0,30,0,0" Background="#e74c3c" Foreground="White"/>
             </StackPanel>
         </Border>
 
-        <!-- Основной холст для рисования графа -->
-        <Grid Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+        <!-- Холст -->
+        <Border Grid.Column="1" Background="White">
+            <local:GraphCanvasControl DataContext="{Binding}"/>
+        </Border>
 
-            <!-- Графовый холст -->
-            <Border Grid.Row="1" 
-                    Background="White" 
-                    BorderBrush="LightGray" 
-                    BorderThickness="1">
-                <local:GraphCanvasControl DataContext="{Binding GraphCanvas}"/>
-            </Border>
+        <!-- Overlay Диалог (модальное окно) -->
+        <Grid Grid.ColumnSpan="2" Background="#66000000" 
+              Visibility="{Binding ActiveDialog, Converter={StaticResource NullToVisibilityConverter}}">
+            <local:EdgeDialogControl DataContext="{Binding ActiveDialog}" 
+                                     VerticalAlignment="Center" 
+                                     HorizontalAlignment="Center"/>
         </Grid>
     </Grid>
 </UserControl>

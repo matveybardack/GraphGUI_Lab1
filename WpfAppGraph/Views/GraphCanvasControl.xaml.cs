@@ -1,15 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+﻿using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace WpfAppGraph.Views
 {
@@ -22,5 +12,21 @@ namespace WpfAppGraph.Views
         {
             InitializeComponent();
         }
+
+        private void MainCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+
+        }
+
+        //private void MainCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        //{
+        //    // Пробрасываем клик в команду DrawGraphViewModel
+        //    if (DataContext is ViewModels.DrawGraphVM vm)
+        //    {
+        //        var pos = e.GetPosition(MainCanvas);
+        //        if (vm.CanvasClickCommand.CanExecute(pos))
+        //            vm.CanvasClickCommand.Execute(pos);
+        //    }
+        //}
     }
 }

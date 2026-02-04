@@ -8,55 +8,17 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
-        <!-- Конвертеры для состояний -->
+        <!-- Конвертеры и стили (оставляем те же, что были в вашем первом сообщении) -->
         <converters:VertexStateToBrushConverter x:Key="VertexStateToBrushConverter"/>
         <converters:VertexStateToBorderBrushConverter x:Key="VertexStateToBorderBrushConverter"/>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <converters:EdgeTypeToBrushConverter x:Key="EdgeTypeToBrushConverter"/>
-
-        <!-- Стили для вершин -->
-        <Style x:Key="BaseVertexStyle" TargetType="Ellipse">
-            <Setter Property="Width" Value="40"/>
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="StrokeThickness" Value="2"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-
-        <!-- Стиль для ребер -->
-        <Style x:Key="BaseEdgeStyle" TargetType="Line">
-            <Setter Property="StrokeThickness" Value="2"/>
-            <Setter Property="StrokeEndLineCap" Value="Round"/>
-        </Style>
-
-        <!-- Шаблон для вершины -->
+        
         <DataTemplate x:Key="VertexTemplate">
-            <Grid>
-                <!-- Основной круг вершины -->
-                <Ellipse x:Name="VertexCircle"
-                         Style="{StaticResource BaseVertexStyle}"
-                         Stroke="{Binding State, Converter={StaticResource VertexStateToBorderBrushConverter}}"
-                         Fill="{Binding State, Converter={StaticResource VertexStateToBrushConverter}}"/>
-
-                <!-- Метка вершины -->
-                <TextBlock Text="{Binding Label}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           FontWeight="Bold"
-                           Foreground="Black"/>
-
-                <!-- Индикатор времени для DFS -->
-                <StackPanel x:Name="TimeIndicator"
-                            VerticalAlignment="Top"
-                            HorizontalAlignment="Left"
-                            Margin="-20,-20,0,0"
-                            Visibility="{Binding ShowTimeLabels, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <StackPanel Orientation="Horizontal" Background="#80FFFFFF">
-                        <TextBlock Text="[" FontSize="8"/>
-                        <TextBlock Text="{Binding EntryTime}" FontSize="9" FontWeight="Bold"/>
-                        <TextBlock Text="," FontSize="8"/>
-                        <TextBlock Text="{Binding ExitTime}" FontSize="9" FontWeight="Bold"/>
-                        <TextBlock Text="]" FontSize="8"/>
-                    </StackPanel>
+            <Grid Width="40" Height="40">
+                <Ellipse x:Name="Circle" Fill="{Binding State, Converter={StaticResource VertexStateToBrushConverter}}" 
+                 Stroke="{Binding State, Converter={StaticResource VertexStateToBorderBrushConverter}}" StrokeThickness="2"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" FontWeight="Bold" FontSize="13"/>
+                    <TextBlock Text="{Binding IterationInfo}" HorizontalAlignment="Center" FontSize="9" Foreground="#555555" Margin="0,-2,0,0"/>
                 </StackPanel>
             </Grid>
         </DataTemplate>
@@ -96,59 +58,38 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <!-- Основной контейнер -->
-    <Grid>
-        <!-- Холст для графа -->
-        <Canvas x:Name="MainCanvas" Background="White">
+    <Canvas x:Name="MainCanvas" Background="Transparent" MouseLeftButtonDown="MainCanvas_MouseLeftButtonDown">
+        <!-- Слой ребер -->
+        <ItemsControl ItemsSource="{Binding Edges}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Canvas/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource EdgeTemplate}"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
-            <!-- Слой для ребер -->
-            <ItemsControl x:Name="EdgesContainer"
-                          ItemsSource="{Binding Edges}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <Canvas/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ContentControl Content="{Binding}"
-                                        ContentTemplate="{StaticResource EdgeTemplate}"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <!-- Слой для вершин -->
-            <ItemsControl x:Name="VerticesContainer"
-                          ItemsSource="{Binding Vertices}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <Canvas/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ContentControl Content="{Binding}"
-                                        Canvas.Left="{Binding X}"
-                                        Canvas.Top="{Binding Y}"
-                                        ContentTemplate="{StaticResource VertexTemplate}"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <!-- Временное ребро при создании (визуальная обратная связь) -->
-            <Line x:Name="TempEdgeLine"
-                  Stroke="Gray"
-                  StrokeThickness="2"
-                  StrokeDashArray="5,2"
-                  Visibility="Collapsed"/>
-
-            <!-- Временная стрелка -->
-            <Path x:Name="TempEdgeArrow"
-                  Stroke="Gray"
-                  StrokeThickness="2"
-                  Fill="Gray"
-                  Visibility="Collapsed"/>
-
-        </Canvas>
-    </Grid>
+        <!-- Слой вершин -->
+        <ItemsControl ItemsSource="{Binding Vertices}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Canvas/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Button Command="{Binding DataContext.VertexClickCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}"
+                            Canvas.Left="{Binding X}" Canvas.Top="{Binding Y}"
+                            Background="Transparent" BorderThickness="0" Padding="0">
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource VertexTemplate}"/>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Canvas>
 </UserControl>
