@@ -8,12 +8,13 @@ namespace WpfAppGraph.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return value?.Equals(parameter) ?? false;
+            if (value == null || parameter == null) return false;
+            return value.ToString() == parameter.ToString();
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return value?.Equals(true) == true ? parameter : Binding.DoNothing;
+            return value is bool b && b ? Enum.Parse(targetType, parameter.ToString()) : Binding.DoNothing;
         }
     }
 }

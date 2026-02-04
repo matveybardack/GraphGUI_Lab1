@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
+using WpfAppGraph.Models.Enums;
 
 namespace WpfAppGraph.Converters
 {
@@ -9,24 +10,16 @@ namespace WpfAppGraph.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            // В реальности будет enum VertexState
-            if (value is string state)
+            return (value as VertexState?) switch
             {
-                return state switch
-                {
-                    "Selected" => Brushes.Gold,
-                    "Target" => Brushes.LightGreen,
-                    "Visited" => Brushes.LightCoral,
-                    "Current" => Brushes.Orange,
-                    _ => Brushes.LightBlue
-                };
-            }
-            return Brushes.LightBlue;
+                VertexState.Selected => Brushes.Orange,
+                VertexState.Target => Brushes.Red,
+                VertexState.Visited => Brushes.LightBlue,
+                VertexState.Active => Brushes.Gray,
+                VertexState.Finished => Brushes.Black,
+                _ => Brushes.WhiteSmoke // Default
+            };
         }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
     }
 }

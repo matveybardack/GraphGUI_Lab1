@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
-using System.Windows;
+﻿using System.Globalization;
 using System.Windows.Data;
+using System.Windows.Media;
+using WpfAppGraph.Models.Enums;
 
 namespace WpfAppGraph.Converters
 {
@@ -11,12 +9,16 @@ namespace WpfAppGraph.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return (value as VertexState?) switch
+            {
+                VertexState.Selected => Brushes.DarkOrange,
+                VertexState.Target => Brushes.DarkRed,
+                VertexState.Visited => Brushes.SteelBlue,
+                VertexState.Active => Brushes.DimGray,
+                VertexState.Finished => Brushes.Black,
+                _ => Brushes.Black // Default
+            };
         }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
     }
 }
