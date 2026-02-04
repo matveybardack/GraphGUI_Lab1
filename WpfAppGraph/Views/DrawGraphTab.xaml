@@ -30,8 +30,7 @@
         <!-- Левая панель инструментов -->
         <Border Grid.Column="0" Background="#f8f9fa" BorderBrush="LightGray" BorderThickness="0,0,1,0">
             <StackPanel Margin="10">
-                <TextBlock Text="ГРАФ" FontSize="20" FontWeight="Black" Margin="0,0,0,20" Foreground="#2c3e50"/>
-
+             
                 <RadioButton Content="Вершина" IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AddVertex}" Style="{StaticResource ToolButtonStyle}"/>
                 <RadioButton Content="Ребро" IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AddEdge}" Style="{StaticResource ToolButtonStyle}"/>
                 <RadioButton Content="Целевая" IsChecked="{Binding CurrentTool, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=SetTarget}" Style="{StaticResource ToolButtonStyle}"/>
@@ -48,7 +47,7 @@
 
         <!-- Холст -->
         <Border Grid.Column="1" Background="White">
-            <local:GraphCanvasControl DataContext="{Binding}"/>
+            <local:GraphCanvasControl DataContext="{Binding GraphCanvas}"/>
         </Border>
 
         <!-- Overlay Диалог (модальное окно) -->

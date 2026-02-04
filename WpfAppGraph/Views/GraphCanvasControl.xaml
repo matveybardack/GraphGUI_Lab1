@@ -8,48 +8,43 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
-        <!-- Конвертеры и стили (оставляем те же, что были в вашем первом сообщении) -->
+        <!-- Ваши конвертеры (без изменений) -->
         <converters:VertexStateToBrushConverter x:Key="VertexStateToBrushConverter"/>
         <converters:VertexStateToBorderBrushConverter x:Key="VertexStateToBorderBrushConverter"/>
-        
+        <converters:EdgeTypeToBrushConverter x:Key="EdgeTypeToBrushConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <!-- Шаблон вершины (УБРАЛИ Canvas.Left/Top отсюда) -->
         <DataTemplate x:Key="VertexTemplate">
             <Grid Width="40" Height="40">
                 <Ellipse x:Name="Circle" Fill="{Binding State, Converter={StaticResource VertexStateToBrushConverter}}" 
                  Stroke="{Binding State, Converter={StaticResource VertexStateToBorderBrushConverter}}" StrokeThickness="2"/>
-                <StackPanel VerticalAlignment="Center">
+                <StackPanel VerticalAlignment="Center" IsHitTestVisible="False">
                     <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" FontWeight="Bold" FontSize="13"/>
                     <TextBlock Text="{Binding IterationInfo}" HorizontalAlignment="Center" FontSize="9" Foreground="#555555" Margin="0,-2,0,0"/>
                 </StackPanel>
             </Grid>
         </DataTemplate>
 
-        <!-- Шаблон для ребра -->
+        <!-- Шаблон ребра (без изменений) -->
         <DataTemplate x:Key="EdgeTemplate">
             <Grid>
-                <!-- Линия ребра -->
-                <Line x:Name="EdgeLine"
-                      X1="{Binding X1}"
-                      Y1="{Binding Y1}"
-                      X2="{Binding X2}"
-                      Y2="{Binding Y2}"
-                      Style="{StaticResource BaseEdgeStyle}"
+                <Line IsHitTestVisible="False"
+                      X1="{Binding X1}" Y1="{Binding Y1}"
+                      X2="{Binding X2}" Y2="{Binding Y2}"
+                      StrokeThickness="2"
                       Stroke="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"/>
 
-                <!-- Стрелка для ориентированного ребра -->
-                <Path x:Name="EdgeArrow"
+                <Path IsHitTestVisible="False"
                       Data="{Binding ArrowGeometry}"
                       Stroke="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
                       Fill="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
                       Visibility="{Binding IsDirected, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
-                <!-- Вес ребра (по середине) -->
                 <TextBlock Text="{Binding Weight, StringFormat={}{0:F1}}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Background="White"
-                           Padding="2,1"
-                           FontWeight="Bold"
-                           FontSize="10">
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Background="White" Padding="2,1" FontWeight="Bold" FontSize="10"
+                           IsHitTestVisible="False">
                     <TextBlock.RenderTransform>
                         <TranslateTransform X="{Binding LabelX}" Y="{Binding LabelY}"/>
                     </TextBlock.RenderTransform>
@@ -58,12 +53,15 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <Canvas x:Name="MainCanvas" Background="Transparent" MouseLeftButtonDown="MainCanvas_MouseLeftButtonDown">
-        <!-- Слой ребер -->
+    <!-- ИСПРАВЛЕНИЕ 1: Обработчик клика прямо на корневом Grid. 
+         Background="Transparent" обязателен, чтобы Grid ловил клики по пустому месту. -->
+    <Grid Background="Transparent" MouseLeftButtonDown="MainCanvas_MouseLeftButtonDown">
+
+        <!-- Слой 1: Ребра -->
         <ItemsControl ItemsSource="{Binding Edges}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <Canvas/>
+                    <Canvas IsItemsHost="True"/>
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
@@ -73,23 +71,40 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <!-- Слой вершин -->
+        <!-- Слой 2: Вершины -->
         <ItemsControl ItemsSource="{Binding Vertices}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <Canvas/>
+                    <Canvas IsItemsHost="True"/>
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
+
+            <!-- ИСПРАВЛЕНИЕ 2: ItemContainerStyle! 
+                 Это заставляет сам контейнер элемента позиционироваться на Canvas -->
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                    <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
+                    <!-- Кнопка теперь просто лежит внутри контейнера, который уже сдвинут -->
                     <Button Command="{Binding DataContext.VertexClickCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding}"
-                            Canvas.Left="{Binding X}" Canvas.Top="{Binding Y}"
                             Background="Transparent" BorderThickness="0" Padding="0">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <ContentPresenter/>
+                            </ControlTemplate>
+                        </Button.Template>
                         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource VertexTemplate}"/>
                     </Button>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-    </Canvas>
+
+        <!-- УБРАЛИ лишний ClickCanvas снизу, теперь клики ловит Grid -->
+    </Grid>
 </UserControl>

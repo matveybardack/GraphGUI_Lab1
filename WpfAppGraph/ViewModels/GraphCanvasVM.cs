@@ -9,7 +9,7 @@ using WpfAppGraph.Models.Enums;
 
 namespace WpfAppGraph.ViewModels
 {
-    public partial class GraphCanvasViewModel : ObservableObject
+    public partial class GraphCanvasVM : ObservableObject
     {
         // Коллекции для привязки к ItemsControl в XAML
         public ObservableCollection<VertexViewModel> Vertices { get; } = new ObservableCollection<VertexViewModel>();
@@ -19,10 +19,6 @@ namespace WpfAppGraph.ViewModels
         // Родитель решит, что делать: соединять вершины, удалять или выбирать цель
         public event Action<VertexViewModel>? VertexClicked;
         public event Action<Point>? CanvasClicked;
-
-        public GraphCanvasViewModel()
-        {
-        }
 
         /// <summary>
         /// Команда, вызываемая при клике на КНОПКУ внутри шаблона вершины.

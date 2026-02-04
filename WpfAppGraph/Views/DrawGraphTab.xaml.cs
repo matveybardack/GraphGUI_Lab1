@@ -23,24 +23,24 @@ namespace WpfAppGraph.Views
             InitializeComponent();
         }
 
-        private void GraphCanvas_MouseDown(object sender, MouseButtonEventArgs e)
-        {
+        //private void GraphCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+        //{
 
-        }
+        //}
 
-        private void Vertex_MouseDown(object sender, MouseButtonEventArgs e)
-        {
+        //private void Vertex_MouseDown(object sender, MouseButtonEventArgs e)
+        //{
 
-        }
+        //}
 
-        private void Vertex_MouseMove(object sender, MouseEventArgs e)
-        {
+        //private void Vertex_MouseMove(object sender, MouseEventArgs e)
+        //{
 
-        }
+        //}
 
-        private void Vertex_MouseUp(object sender, MouseButtonEventArgs e)
-        {
+        //private void Vertex_MouseUp(object sender, MouseButtonEventArgs e)
+        //{
 
-        }
+        //}
     }
 }
