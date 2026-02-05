@@ -15,6 +15,11 @@
         <DataTemplate DataType="{x:Type vm:DrawGraphVM}">
             <tabs:DrawGraphTab/>
         </DataTemplate>
+
+        <!-- Поиск в ширину -->
+        <DataTemplate DataType="{x:Type vm:GraphBFSVM}">
+            <tabs:GraphBFSTab/>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>

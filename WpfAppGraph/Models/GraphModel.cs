@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using WpfAppGraph.Models.Enums;
+using WpfAppGraph.Models.Structs;
 
 namespace WpfAppGraph.Models
 {
@@ -106,85 +108,136 @@ namespace WpfAppGraph.Models
 
         #region BFS
 
-        public IEnumerable<AlgorithmStep> RunBFS(int startVertexId)
+        /// <summary>
+        /// Запускает поиск в ширину (BFS).
+        /// </summary>
+        /// <param name="startId">ID стартовой вершины</param>
+        /// <param name="targetId">ID целевой вершины (может быть null)</param>
+        /// <param name="result">Объект для записи итоговых результатов</param>
+        /// <returns>Ленивая коллекция шагов для анимации</returns>
+        public IEnumerable<AlgorithmStep> RunBfs(int startId, int? targetId, BfsResult result)
         {
-            if (!_vertices.Contains(startVertexId))
-                yield break;
+            if (!_vertices.Contains(startId)) yield break;
 
-            // Множество посещенных вершин
-            var visited = new HashSet<int>();
-            // Очередь для BFS
+            // Инициализация структур данных
             var queue = new Queue<int>();
+            var parentMap = new Dictionary<int, int>(); // Для восстановления пути
+            var discoveryTime = new Dictionary<int, int>(); // Время входа (d)
+            var finishTime = new Dictionary<int, int>();    // Время выхода (f)
+            var visited = new HashSet<int>();
 
-            // Начальный шаг
-            visited.Add(startVertexId);
-            queue.Enqueue(startVertexId);
+            int timer = 1;
+            StringBuilder structBuilder = new StringBuilder();
 
+            // Начало алгоритма
+            queue.Enqueue(startId);
+            visited.Add(startId);
+            discoveryTime[startId] = timer++;
+
+            structBuilder.Append($"({startId} "); // Открываем скобку для структуры
+
+            // Шаг 1: Анимация старта (красим в Active/Visited, пишем время входа)
             yield return new AlgorithmStep
             {
-                VertexId = startVertexId,
-                NewVertexState = VertexState.Active // Серый (в очереди)
+                VertexId = startId,
+                NewVertexState = VertexState.Active,
+                IterationInfo = $"{discoveryTime[startId]}/-"
             };
+
+            bool targetFound = false;
 
             while (queue.Count > 0)
             {
-                int current = queue.Dequeue();
+                int u = queue.Dequeue();
 
-                yield return new AlgorithmStep
-                {
-                    VertexId = current,
-                    NewVertexState = VertexState.Selected // Оранжевый (текущая обрабатываемая)
-                };
+                // Для красоты анимации: когда достаем из очереди, можно подсвечивать как "текущий обрабатываемый"
+                // Но в BFS вершина обычно красится при добавлении. Оставим логику:
+                // Visited (серый) - в очереди, Finished (черный) - обработан.
 
-                // Проходим по всем соседям
-                if (_adjacencyList.TryGetValue(current, out var edges))
+                if (targetId.HasValue && u == targetId.Value)
                 {
-                    foreach (var edge in edges)
+                    targetFound = true;
+                    // Если цель найдена, можно прерывать поиск, если нам нужен только путь.
+                    // Если нужно построить полное дерево обхода компоненты связности - убираем break.
+                    // Для задачи поиска пути обычно прерывают.
+                }
+
+                if (_adjacencyList.ContainsKey(u))
+                {
+                    // Сортируем соседей для детерминированности (не обязательно, но полезно для UI)
+                    var neighbors = _adjacencyList[u].OrderBy(e => e.To).ToList();
+
+                    foreach (var edge in neighbors)
                     {
-                        int neighbor = edge.To;
-
-                        // Визуализируем, что мы смотрим на ребро
-                        // Здесь мы не меняем тип ребра навсегда, просто показываем процесс?
-                        // Или красим в TreeEdge, если идем по нему.
-
-                        if (!visited.Contains(neighbor))
+                        int v = edge.To;
+                        if (!visited.Contains(v))
                         {
-                            visited.Add(neighbor);
-                            queue.Enqueue(neighbor);
+                            visited.Add(v);
+                            parentMap[v] = u; // Запоминаем откуда пришли
+                            discoveryTime[v] = timer++;
+                            structBuilder.Append($"({v} ");
 
+                            queue.Enqueue(v);
+
+                            // Шаг 2: Анимация открытия соседа (ребро + вершина)
                             yield return new AlgorithmStep
                             {
-                                EdgeFromId = current,
-                                EdgeToId = neighbor,
-                                NewEdgeType = EdgeType.TreeEdge, // Это ребро дерева обхода
+                                VertexId = v,
+                                NewVertexState = VertexState.Visited, // Добавили в очередь
+                                IterationInfo = $"{discoveryTime[v]}/-",
+                                EdgeFromId = u,
+                                EdgeToId = v,
+                                NewEdgeType = EdgeType.TreeEdge // Ребро дерева обхода
+                            };
 
-                                VertexId = neighbor,
-                                NewVertexState = VertexState.Active // Добавлена в очередь
-                            };
-                        }
-                        else
-                        {
-                            // Если вершина уже посещена, ребро может быть Cross, Back или Forward (для BFS сложнее классификация)
-                            // Для простоты подсветим, что ребро проверено, но вершина уже была
-                            yield return new AlgorithmStep
+                            // Если нашли цель прямо сейчас
+                            if (targetId.HasValue && v == targetId.Value)
                             {
-                                EdgeFromId = current,
-                                EdgeToId = neighbor,
-                                NewEdgeType = EdgeType.CrossEdge // Условно помечаем как перекрестное/другое
-                            };
+                                targetFound = true;
+                                // Можно сделать yield break здесь, если хотим мгновенно остановиться
+                            }
                         }
                     }
                 }
 
-                // Завершили обработку вершины
+                // Завершение обработки вершины u
+                finishTime[u] = timer++;
+                structBuilder.Append($") "); // Закрываем скобку
+
+                // Шаг 3: Вершина полностью обработана
                 yield return new AlgorithmStep
                 {
-                    VertexId = current,
-                    NewVertexState = VertexState.Visited // Голубой (полностью обработана)
+                    VertexId = u,
+                    NewVertexState = VertexState.Finished,
+                    IterationInfo = $"{discoveryTime[u]}/{finishTime[u]}"
                 };
             }
 
-            yield return new AlgorithmStep();
+            // --- Формирование результатов ---
+            result.IsTargetFound = targetFound;
+            result.ParenthesisStructure = structBuilder.ToString().Trim();
+
+            // Восстановление пути, если цель была задана и найдена
+            if (targetFound && targetId.HasValue)
+            {
+                int curr = targetId.Value;
+                result.Path.Add(curr);
+
+                while (curr != startId)
+                {
+                    if (!parentMap.ContainsKey(curr)) break; // На всякий случай
+
+                    int p = parentMap[curr];
+
+                    // Считаем вес ребра
+                    var edge = _adjacencyList[p].First(e => e.To == curr);
+                    result.PathLength += edge.Weight;
+
+                    curr = p;
+                    result.Path.Add(curr);
+                }
+                result.Path.Reverse(); // Путь от старта к цели
+            }
         }
 
         #endregion

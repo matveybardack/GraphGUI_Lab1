@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace WpfAppGraph.Models
+namespace WpfAppGraph.Models.Structs
 {
-    public class GraphEdge
+    public record class GraphEdge
     {
         public int From { get; }
         public int To { get; }

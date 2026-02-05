@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Data;
 using System.Linq;
 using System.Windows;
 using WpfAppGraph.Models;
@@ -28,6 +29,9 @@ namespace WpfAppGraph.ViewModels
 
         [ObservableProperty]
         private int _edgeCount;
+
+        [ObservableProperty]
+        private DataView _adjacencyMatrixView;
 
         // Временное хранение первой вершины при создании ребра
         private VertexViewModel _firstSelectedVertex;
@@ -86,7 +90,7 @@ namespace WpfAppGraph.ViewModels
         {
             // Сбрасываем предыдущую цель (если была)
             var oldTarget = GraphCanvas.Vertices.FirstOrDefault(v => v.State == VertexState.Target);
-            if (oldTarget != null) oldTarget.State = VertexState.Default;
+            oldTarget?.State = VertexState.Default;
 
             // Если кликнули по той же самой - просто снимаем выделение
             if (oldTarget == vertex) return;
@@ -150,10 +154,7 @@ namespace WpfAppGraph.ViewModels
             ResetSelection();
         }
 
-        private void CloseDialog()
-        {
-            ActiveDialog = null;
-        }
+        private void CloseDialog() => ActiveDialog = null;
 
         private void ResetSelection()
         {
@@ -177,10 +178,52 @@ namespace WpfAppGraph.ViewModels
             UpdateStats();
         }
 
+        private void BuildAdjacencyMatrixDataTable()
+        {
+            // 1. Получаем данные из модели
+            var vertices = _graphModel.GetVertices();
+            var matrix = _graphModel.GetAdjacencyMatrix();
+            int n = vertices.Count;
+
+            // 2. Создаем DataTable
+            var table = new DataTable();
+
+            // 3. Создаем столбцы
+            // Первый столбец - заголовок ряда (ID вершины)
+            table.Columns.Add("v", typeof(string));
+
+            // Остальные столбцы - ID вершин
+            foreach (var vertexId in vertices)
+            {
+                table.Columns.Add(vertexId.ToString(), typeof(string));
+            }
+
+            // 4. Заполняем строки
+            for (int i = 0; i < n; i++)
+            {
+                var row = table.NewRow();
+                row[0] = vertices[i].ToString(); // Заголовок ряда
+
+                for (int j = 0; j < n; j++)
+                {
+                    double val = matrix[i, j];
+                    // Если Infinity, ставим красивый знак или прочерк, иначе вес
+                    // Индекс смещен на +1, т.к. 0-й столбец это заголовок
+                    row[j + 1] = double.IsPositiveInfinity(val) ? "-" : val.ToString("0.#");
+                }
+                table.Rows.Add(row);
+            }
+
+            // 5. Обновляем свойство для UI
+            AdjacencyMatrixView = table.DefaultView;
+        }
+
         private void UpdateStats()
         {
             VertexCount = GraphCanvas.Vertices.Count;
             EdgeCount = GraphCanvas.Edges.Count;
+            // При обновлении состояния можно перестраивать матрицу смежности
+            BuildAdjacencyMatrixDataTable();
         }
 
         // Метод для получения модели (понадобится другим вкладкам/VM)

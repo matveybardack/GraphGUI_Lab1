@@ -26,30 +26,38 @@
             </Grid>
         </DataTemplate>
 
-        <!-- Шаблон ребра (без изменений) -->
+        <!-- Шаблон ребра -->
         <DataTemplate x:Key="EdgeTemplate">
-            <Grid>
+            <!-- Используем Canvas, чтобы элементы позиционировались абсолютно относительно (0,0) -->
+            <Canvas>
                 <Line IsHitTestVisible="False"
-                      X1="{Binding X1}" Y1="{Binding Y1}"
-                      X2="{Binding X2}" Y2="{Binding Y2}"
-                      StrokeThickness="2"
-                      Stroke="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"/>
+              X1="{Binding X1}" Y1="{Binding Y1}"
+              X2="{Binding X2}" Y2="{Binding Y2}"
+              StrokeThickness="2"
+              Stroke="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"/>
 
                 <Path IsHitTestVisible="False"
-                      Data="{Binding ArrowGeometry}"
-                      Stroke="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
-                      Fill="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
-                      Visibility="{Binding IsDirected, Converter={StaticResource BoolToVisibilityConverter}}"/>
+              Data="{Binding ArrowGeometry}"
+              Stroke="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
+              Fill="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
+              Visibility="{Binding IsDirected, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
+                <!-- Текст веса -->
+                <!-- Убрали Alignment="Center" и RenderTransform с TranslateTransform -->
+                <!-- Используем Canvas.Left/Top для прямой установки позиции -->
                 <TextBlock Text="{Binding Weight, StringFormat={}{0:F1}}"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                           Background="White" Padding="2,1" FontWeight="Bold" FontSize="10"
-                           IsHitTestVisible="False">
+                   Canvas.Left="{Binding LabelX}"
+                   Canvas.Top="{Binding LabelY}"
+                   Background="White" Padding="2,0" FontWeight="Bold" FontSize="10"
+                   IsHitTestVisible="False">
+            <!-- Сдвигаем текст назад на половину его предполагаемой ширины/высоты, 
+                 чтобы координаты указывали на центр плашки, а не на левый верхний угол.
+                 Примерно -10 по X и -8 по Y для небольших чисел. -->
                     <TextBlock.RenderTransform>
-                        <TranslateTransform X="{Binding LabelX}" Y="{Binding LabelY}"/>
+                        <TranslateTransform X="-10" Y="-8"/>
                     </TextBlock.RenderTransform>
                 </TextBlock>
-            </Grid>
+            </Canvas>
         </DataTemplate>
     </UserControl.Resources>
 

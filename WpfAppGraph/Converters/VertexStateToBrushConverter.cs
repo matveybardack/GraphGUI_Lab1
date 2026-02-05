@@ -16,7 +16,7 @@ namespace WpfAppGraph.Converters
                 VertexState.Target => Brushes.Red,
                 VertexState.Visited => Brushes.LightBlue,
                 VertexState.Active => Brushes.Gray,
-                VertexState.Finished => Brushes.Black,
+                VertexState.Finished => Brushes.LightPink,
                 _ => Brushes.WhiteSmoke // Default
             };
         }

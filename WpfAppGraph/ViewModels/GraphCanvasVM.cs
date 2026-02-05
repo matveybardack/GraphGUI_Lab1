@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using WpfAppGraph.Models;
 using WpfAppGraph.Models.Enums;
+using WpfAppGraph.Models.Structs;
 
 namespace WpfAppGraph.ViewModels
 {
@@ -115,6 +116,7 @@ namespace WpfAppGraph.ViewModels
                     // но для анимации алгоритма важнее показать, что она сейчас Visited.
                     // Тут логика зависит от предпочтений. Пока просто красим.
                     vertex.State = step.NewVertexState.Value;
+                    vertex.IterationInfo = step.IterationInfo;
                 }
             }
 
@@ -141,6 +143,66 @@ namespace WpfAppGraph.ViewModels
                 {
                     edge.Type = step.NewEdgeType.Value;
                 }
+            }
+        }
+
+        #endregion
+
+        #region Методы для BFS/DFS (копирование и сброс)
+
+        /// <summary>
+        /// Полностью перестраивает визуальный граф на основе логической модели.
+        /// Это обеспечивает независимость холста BFS от холста рисования.
+        /// </summary>
+        public void RebuildFromModel(GraphModel model)
+        {
+            ClearGraph(); // Очищаем текущий холст BFS
+
+            // 1. Создаем вершины
+            var modelVertices = model.GetVertices();
+            foreach (var id in modelVertices)
+            {
+                // Для простоты расставляем их по кругу или сетке, 
+                // НО лучше сохранить координаты из DrawVM.
+                // Так как у нас нет доступа к координатам из Model (там только структура),
+                // в реальном приложении координаты стоит хранить в Model.
+                // Здесь мы сделаем допущение: если координаты не переданы, ставим случайно или по кругу.
+
+                // ВАЖНО: В рамках задачи мы просто создаем их. 
+                // (Для идеального переноса координат нужно передавать список VertexViewModel из DrawTab)
+
+                Vertices.Add(new VertexViewModel(id, 100 + (id * 50) % 400, 100 + (id / 10) * 50));
+            }
+
+            // 2. Создаем ребра (нам нужно получить их из модели)
+            // В GraphModel у нас _adjacencyList private, но есть GetAdjacencyMatrix или можно расширить Model.
+            // Предположим, мы расширим Model методом GetEdges() или переберем список.
+
+            // Временное решение: используем существующий GetVertices и предположим доступ к ребрам.
+            // ПРАВИЛЬНЫЙ ПУТЬ: Добавить в GraphModel метод public List<GraphEdge> GetAllEdges().
+        }
+
+        /// <summary>
+        /// Метод для копирования визуального состояния из другой ViewModel (чтобы сохранить координаты)
+        /// </summary>
+        public void CloneFrom(GraphCanvasVM other)
+        {
+            ClearGraph();
+
+            foreach (var v in other.Vertices)
+            {
+                var newV = new VertexViewModel(v.Id, v.X, v.Y) { State = v.State };
+                // Если вершина была Selected, сбрасываем в Default, чтобы выбрать заново для BFS,
+                // но Target оставляем.
+                if (newV.State == VertexState.Selected) newV.State = VertexState.Default;
+                Vertices.Add(newV);
+            }
+
+            foreach (var e in other.Edges)
+            {
+                var source = Vertices.First(v => v.Id == e.Source.Id);
+                var target = Vertices.First(v => v.Id == e.Target.Id);
+                Edges.Add(new EdgeViewModel(source, target, e.Weight, e.IsDirected));
             }
         }
 

@@ -5,14 +5,23 @@ namespace WpfAppGraph.ViewModels
     {
         public ObservableCollection<TabItemViewModel> Tabs { get; } = new();
 
+        public DrawGraphVM DrawGraph { get; } = new DrawGraphVM();
+
         public MainViewModel()
         {
+            var sharedModel = DrawGraph.GetGraphModel();
+
             Tabs.Add(new TabItemViewModel
             {
                 Header = "Рисование графа",
-                ContentViewModel = new DrawGraphVM()
+                ContentViewModel = DrawGraph
             });
 
+            Tabs.Add(new TabItemViewModel
+            {
+                Header = "Поиск в ширину",
+                ContentViewModel = new GraphBFSVM(sharedModel, DrawGraph)
+            });
             //TODO: Add more tabs if needed
         }
 
