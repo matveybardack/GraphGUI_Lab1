@@ -241,5 +241,284 @@ namespace WpfAppGraph.Models
         }
 
         #endregion
+
+        #region DFS
+
+        // Вспомогательный метод для заполнения итогового результата (путь и строка)
+        private void FillResult(DfsResult result, int? targetId, bool targetFound, StringBuilder sb, Dictionary<int, int> parentMap, Dictionary<int, List<GraphEdge>> adj)
+        {
+            result.ParenthesisStructure = sb.ToString().Trim();
+            result.IsTargetFound = targetFound;
+
+            if (targetFound && targetId.HasValue)
+            {
+                int curr = targetId.Value;
+                result.Path.Add(curr);
+                while (parentMap.ContainsKey(curr))
+                {
+                    int p = parentMap[curr];
+
+                    // Ищем вес
+                    if (adj.ContainsKey(p))
+                    {
+                        var edge = adj[p].FirstOrDefault(e => e.To == curr);
+                        if (edge != null) result.PathLength += edge.Weight;
+                    }
+
+                    curr = p;
+                    result.Path.Add(curr);
+                }
+                result.Path.Reverse();
+            }
+        }
+
+        /// <summary>
+        /// Вариант 1: Итеративный DFS (на стеке).
+        /// Имитирует рекурсию с помощью стека для построения скобочной структуры.
+        /// </summary>
+        public IEnumerable<AlgorithmStep> RunDfsIterative(int? startId, int? targetId, DfsResult result)
+        {
+            // Подготовка структур
+            var visited = new HashSet<int>();
+            var parentMap = new Dictionary<int, int>();
+            var discoveryTime = new Dictionary<int, int>();
+            var finishTime = new Dictionary<int, int>();
+
+            // Стек хранит ID вершины. 
+            // Мы не удаляем вершину сразу, а ждем обработки всех детей для времени выхода.
+            var stack = new Stack<int>();
+
+            int timer = 1;
+            StringBuilder structBuilder = new StringBuilder();
+            bool targetFound = false;
+
+            // Определяем порядок обхода компонент связности
+            // Если startId задан, начинаем с него. Потом идем по остальным непосещенным.
+            var allVertices = GetVertices();
+            if (startId.HasValue)
+            {
+                // Перемещаем стартовую вершину в начало списка для приоритета
+                allVertices.Remove(startId.Value);
+                allVertices.Insert(0, startId.Value);
+            }
+
+            foreach (var root in allVertices)
+            {
+                if (visited.Contains(root)) continue;
+                if (targetFound && targetId.HasValue) break; // Если цель найдена и нам нужен только путь
+
+                stack.Push(root);
+
+                while (stack.Count > 0)
+                {
+                    int u = stack.Peek(); // Смотрим, но пока не извлекаем
+
+                    // 1. Вход в вершину (White -> Gray)
+                    if (!visited.Contains(u))
+                    {
+                        visited.Add(u);
+                        discoveryTime[u] = timer++;
+                        structBuilder.Append($"({u} ");
+
+                        yield return new AlgorithmStep
+                        {
+                            VertexId = u,
+                            NewVertexState = VertexState.Active, // Gray
+                            IterationInfo = $"{discoveryTime[u]}/-"
+                        };
+
+                        if (targetId.HasValue && u == targetId.Value)
+                        {
+                            targetFound = true;
+                            // Не прерываем сразу, чтобы корректно закрыть скобки текущего стека?
+                            // Для поиска пути обычно прерывают, но для структуры лучше завершить ветку.
+                            // Давайте прервем поиск новых веток, но размотаем стек.
+                        }
+                    }
+
+                    // 2. Поиск следующего непосещенного соседа
+                    bool hasUnvisitedNeighbor = false;
+
+                    if (_adjacencyList.ContainsKey(u) /*&& (!targetFound || targetId == null)*/) // Если нашли цель, в глубину не идем
+                    {
+                        // Сортируем для детерминированности
+                        var neighbors = _adjacencyList[u].OrderBy(e => e.To).ToList();
+
+                        foreach (var edge in neighbors)
+                        {
+                            int v = edge.To;
+                            if (!visited.Contains(v))
+                            {
+                                parentMap[v] = u;
+                                stack.Push(v); // Кладем в стек и немедленно переходим к ней (break)
+                                hasUnvisitedNeighbor = true;
+
+                                // Анимация ребра дерева (Tree Edge)
+                                yield return new AlgorithmStep
+                                {
+                                    EdgeFromId = u,
+                                    EdgeToId = v,
+                                    NewEdgeType = EdgeType.TreeEdge
+                                };
+                                break; // Уходим в глубину (эмуляция рекурсии)
+                            }
+                            else
+                            {
+                                // Классификация остальных ребер (для красоты)
+                                // Если сосед серый (в стеке и без finishTime) -> Обратное ребро
+                                // Если сосед черный (есть finishTime) -> Прямое или перекрестное
+                                // (Здесь упрощенная проверка, полная будет в методе 3 цветов)
+                            }
+                        }
+                    }
+
+                    // 3. Выход из вершины (Gray -> Black), если нет непосещенных соседей
+                    if (!hasUnvisitedNeighbor)
+                    {
+                        stack.Pop(); // Теперь извлекаем
+                        finishTime[u] = timer++;
+                        structBuilder.Append($") ");
+
+                        yield return new AlgorithmStep
+                        {
+                            VertexId = u,
+                            NewVertexState = VertexState.Finished, // Black
+                            IterationInfo = $"{discoveryTime[u]}/{finishTime[u]}"
+                        };
+                    }
+                }
+            }
+
+            FillResult(result, targetId, targetFound, structBuilder, parentMap, _adjacencyList);
+        }
+
+        /// <summary>
+        /// Вариант 2: Рекурсивный DFS ("Алгоритм 3 цветов").
+        /// Использует системный стек вызовов. 
+        /// Цвета: Default(White) -> Active(Gray) -> Finished(Black).
+        /// </summary>
+        public IEnumerable<AlgorithmStep> RunDfsRecursive(int? startId, int? targetId, DfsResult result)
+        {
+            var visited = new HashSet<int>();     // Множество "Серых" и "Черных"
+            var finished = new HashSet<int>();    // Множество "Черных" (для классификации ребер)
+
+            var parentMap = new Dictionary<int, int>();
+            var discoveryTime = new Dictionary<int, int>();
+            var finishTime = new Dictionary<int, int>();
+
+            int timer = 1;
+            StringBuilder structBuilder = new StringBuilder();
+            bool targetFound = false;
+
+            // Подготовка очереди обхода (сначала выбранный старт, потом остальные)
+            var allVertices = GetVertices();
+            if (startId.HasValue)
+            {
+                allVertices.Remove(startId.Value);
+                allVertices.Insert(0, startId.Value);
+            }
+
+            // Внешний цикл по компонентам связности
+            foreach (var u in allVertices)
+            {
+                if (!visited.Contains(u))
+                {
+                    if (targetFound && targetId.HasValue) break;
+
+                    // Запуск рекурсивной функции (через yield foreach пробрасываем шаги)
+                    foreach (var step in DfsVisit(u))
+                    {
+                        yield return step;
+                    }
+                }
+            }
+
+            // Локальная рекурсивная функция
+            IEnumerable<AlgorithmStep> DfsVisit(int u)
+            {
+                // === WHITE -> GRAY ===
+                visited.Add(u); // Visited но не Finished = Gray
+                discoveryTime[u] = timer++;
+                structBuilder.Append($"({u} ");
+
+                yield return new AlgorithmStep
+                {
+                    VertexId = u,
+                    NewVertexState = VertexState.Active, // Gray
+                    IterationInfo = $"{discoveryTime[u]}/-"
+                };
+
+                if (targetId.HasValue && u == targetId.Value)
+                {
+                    targetFound = true;
+                    // Не делаем yield break, чтобы позволить рекурсии свернуться и проставить черные цвета
+                }
+
+                if (_adjacencyList.ContainsKey(u))
+                {
+                    var neighbors = _adjacencyList[u].OrderBy(e => e.To).ToList();
+                    foreach (var edge in neighbors)
+                    {
+                        // Если нашли цель и хотим остановить исследование СОСЕДЕЙ (но текущий путь закроем)
+                        //if (targetFound && targetId.HasValue) break;
+
+                        int v = edge.To;
+                        if (!visited.Contains(v)) // White
+                        {
+                            parentMap[v] = u;
+
+                            yield return new AlgorithmStep
+                            {
+                                EdgeFromId = u,
+                                EdgeToId = v,
+                                NewEdgeType = EdgeType.TreeEdge
+                            };
+
+                            // Рекурсивный вызов
+                            foreach (var step in DfsVisit(v)) yield return step;
+                        }
+                        else
+                        {
+                            // === КЛАССИФИКАЦИЯ РЕБЕР (Бонус) ===
+                            EdgeType type = EdgeType.Default;
+
+                            if (!finished.Contains(v)) // Сосед Gray -> Back Edge (Обратное)
+                            {
+                                type = EdgeType.BackEdge;
+                            }
+                            else // Сосед Black
+                            {
+                                // Если d[u] < d[v] -> Forward (Прямое), иначе Cross (Перекрестное)
+                                if (discoveryTime[u] < discoveryTime[v]) type = EdgeType.ForwardEdge;
+                                else type = EdgeType.CrossEdge;
+                            }
+
+                            yield return new AlgorithmStep
+                            {
+                                EdgeFromId = u,
+                                EdgeToId = v,
+                                NewEdgeType = type
+                            };
+                        }
+                    }
+                }
+
+                // === GRAY -> BLACK ===
+                finished.Add(u);
+                finishTime[u] = timer++;
+                structBuilder.Append($") ");
+
+                yield return new AlgorithmStep
+                {
+                    VertexId = u,
+                    NewVertexState = VertexState.Finished, // Black
+                    IterationInfo = $"{discoveryTime[u]}/{finishTime[u]}"
+                };
+            }
+
+            FillResult(result, targetId, targetFound, structBuilder, parentMap, _adjacencyList);
+        }
+
+        #endregion
     }
 }

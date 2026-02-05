@@ -22,6 +22,12 @@ namespace WpfAppGraph.ViewModels
                 Header = "Поиск в ширину",
                 ContentViewModel = new GraphBFSVM(sharedModel, DrawGraph)
             });
+
+            Tabs.Add(new TabItemViewModel
+            {
+                Header = "Поиск в глубину",
+                ContentViewModel = new GraphDFSVM(sharedModel, DrawGraph)
+            });
             //TODO: Add more tabs if needed
         }
 

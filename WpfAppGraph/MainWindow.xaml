@@ -20,6 +20,12 @@
         <DataTemplate DataType="{x:Type vm:GraphBFSVM}">
             <tabs:GraphBFSTab/>
         </DataTemplate>
+        
+        <!-- Поиск в глубину -->
+        <DataTemplate DataType="{x:Type vm:GraphDFSVM}">
+            <tabs:GraphDFSTab/>
+        </DataTemplate>
+        
     </Window.Resources>
 
     <Grid>
