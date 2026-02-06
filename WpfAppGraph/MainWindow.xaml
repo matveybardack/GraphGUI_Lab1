@@ -26,6 +26,15 @@
             <tabs:GraphDFSTab/>
         </DataTemplate>
         
+        <!-- Компоненты сильной связности -->
+        <DataTemplate DataType="{x:Type vm:GraphSCCVM}">
+            <tabs:GraphSCCTab/>
+        </DataTemplate>
+        
+        <!-- Цикл Эйлера -->
+        <DataTemplate DataType="{x:Type vm:GraphEulerVM}">
+            <tabs:GraphEulerTab/>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>

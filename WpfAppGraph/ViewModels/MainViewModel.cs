@@ -28,6 +28,18 @@ namespace WpfAppGraph.ViewModels
                 Header = "Поиск в глубину",
                 ContentViewModel = new GraphDFSVM(sharedModel, DrawGraph)
             });
+
+            Tabs.Add(new TabItemViewModel
+            {
+                Header = "Сильная связность",
+                ContentViewModel = new GraphSCCVM(sharedModel, DrawGraph)
+            });
+
+            Tabs.Add(new TabItemViewModel
+            {
+                Header = "Циклы Эйлера",
+                ContentViewModel = new GraphEulerVM(sharedModel, DrawGraph)
+            });
             //TODO: Add more tabs if needed
         }
 

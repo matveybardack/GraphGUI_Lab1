@@ -113,41 +113,37 @@
 
                     <Separator Margin="0,15"/>
 
-                    <!-- Легенда -->
-                    <StackPanel>
-                        <TextBlock Text="Легенда Вершин:" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <!-- Легенда (подсказка) -->
+                    <StackPanel VerticalAlignment="Bottom" Margin="0,30,0,0">
+                        <TextBlock Text="Легенда:" FontWeight="Bold" Margin="0,0,0,5"/>
                         <StackPanel Orientation="Horizontal" Margin="0,2">
                             <Ellipse Width="10" Height="10" Fill="LightGray" Stroke="Gray"/>
-                            <TextBlock Text=" - White (Не посещено)" FontSize="11" Margin="5,0"/>
+                            <TextBlock Text=" - В обработке" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <Ellipse Width="10" Height="10" Fill="Orange" Stroke="DarkOrange"/>
-                            <TextBlock Text=" - Gray (Active/Stack)" FontSize="11" Margin="5,0"/>
+                            <Ellipse Width="10" Height="10" Fill="LightBlue" Stroke="LightBlue"/>
+                            <TextBlock Text=" - Посещена" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <Ellipse Width="10" Height="10" Fill="LightGreen" Stroke="Green"/>
-                            <TextBlock Text=" - Black (Finished)" FontSize="11" Margin="5,0"/>
+                            <Ellipse Width="10" Height="10" Fill="LightPink" Stroke="LightPink"/>
+                            <TextBlock Text=" - Завершено" Margin="5,0"/>
                         </StackPanel>
 
                         <TextBlock Text="Легенда Ребер:" FontWeight="Bold" Margin="0,10,0,5"/>
-                        <!-- Цвета здесь должны совпадать с вашим EdgeTypeToBrushConverter -->
                         <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <Rectangle Width="20" Height="3" Fill="Black"/>
+                            <Rectangle Width="20" Height="3" Fill="Blue"/>
                             <TextBlock Text=" - Tree (Дерево)" FontSize="11" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="20" Height="3" Fill="Red"/>
-                            <!-- Предположим BackEdge красный -->
                             <TextBlock Text=" - Back (Обратное)" FontSize="11" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <Rectangle Width="20" Height="3" Fill="Blue"/>
-                            <!-- Предположим Forward синий -->
+                            <Rectangle Width="20" Height="3" Fill="Green"/>
                             <TextBlock Text=" - Forward (Прямое)" FontSize="11" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="20" Height="3" Fill="Orange"/>
-                            <!-- Предположим Cross оранжевый/желтый -->
                             <TextBlock Text=" - Cross (Перекрестное)" FontSize="11" Margin="5,0"/>
                         </StackPanel>
                     </StackPanel>

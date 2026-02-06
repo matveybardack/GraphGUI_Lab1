@@ -21,105 +21,107 @@
 
         <!-- Левая панель инструментов и результатов -->
         <Border Grid.Column="0" Background="#f8f9fa" BorderBrush="LightGray" BorderThickness="0,0,1,0">
-            <StackPanel Margin="15">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="15">
 
-                <TextBlock Text="Алгоритм BFS" 
+                    <TextBlock Text="Алгоритм BFS" 
                            FontSize="18" 
                            FontWeight="Bold" 
                            Foreground="#2c3e50"
                            Margin="0,0,0,20"/>
 
-                <!-- Кнопка запуска -->
-                <!-- IsEnabled привязываем к обратному свойству IsAnimating (через VM), 
+                    <!-- Кнопка запуска -->
+                    <!-- IsEnabled привязываем к обратному свойству IsAnimating (через VM), 
                      чтобы нельзя было запустить повторно во время анимации -->
-                <Button Content="Запустить поиск" 
+                    <Button Content="Запустить поиск" 
                         Command="{Binding StartBfsCommand}" 
                         Height="35"
                         Background="#3498db" 
                         Foreground="White"
                         FontWeight="Bold"
                         Margin="0,0,0,20">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="3"/>
-                        </Style>
-                    </Button.Resources>
-                </Button>
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="3"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
 
-                <Button Content="Сбросить результаты" 
+                    <Button Content="Сбросить результаты" 
                         Command="{Binding SyncGraphFromDrawTabCommand}" 
                         Height="30"
                         Background="#e74c3c" 
                         Foreground="White"
                         FontWeight="Bold"
                         Margin="0,0,0,10">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="3"/>
-                        </Style>
-                    </Button.Resources>
-                </Button>
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="3"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
 
-                <Separator Margin="0,0,0,15"/>
+                    <Separator Margin="0,0,0,15"/>
 
-                <!-- Блок результатов -->
-                <TextBlock Text="Результаты:" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10"/>
+                    <!-- Блок результатов -->
+                    <TextBlock Text="Результаты:" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10"/>
 
-                <!-- Статус поиска -->
-                <TextBlock Text="Статус:" Foreground="Gray"/>
-                <TextBlock Text="{Binding ResultStatus}" 
+                    <!-- Статус поиска -->
+                    <TextBlock Text="Статус:" Foreground="Gray"/>
+                    <TextBlock Text="{Binding ResultStatus}" 
                            FontWeight="Bold" 
                            Margin="0,0,0,10" 
                            TextWrapping="Wrap"/>
 
-                <!-- Длина пути -->
-                <StackPanel Visibility="{Binding IsResultAvailable, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="Длина пути:" Foreground="Gray"/>
-                    <TextBlock Text="{Binding PathLength, StringFormat='{}{0:F1}'}" 
+                    <!-- Длина пути -->
+                    <StackPanel Visibility="{Binding IsResultAvailable, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="Длина пути:" Foreground="Gray"/>
+                        <TextBlock Text="{Binding PathLength, StringFormat='{}{0:F1}'}" 
                                FontWeight="Bold" 
                                FontSize="16" 
                                Foreground="#e67e22"
                                Margin="0,0,0,10"/>
 
-                    <!-- Сам путь -->
-                    <TextBlock Text="Найденный путь:" Foreground="Gray"/>
-                    <TextBlock Text="{Binding PathString}" 
+                        <!-- Сам путь -->
+                        <TextBlock Text="Найденный путь:" Foreground="Gray"/>
+                        <TextBlock Text="{Binding PathString}" 
                                FontWeight="Bold" 
                                TextWrapping="Wrap" 
                                Margin="0,0,0,10"/>
-                </StackPanel>
+                    </StackPanel>
 
-                <Separator Margin="0,10,0,10"/>
+                    <Separator Margin="0,10,0,10"/>
 
-                <!-- Скобочная структура -->
-                <TextBlock Text="Скобочная структура:" Foreground="Gray"/>
-                <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto" Margin="0,5,0,0">
-                    <TextBlock Text="{Binding ParenthesisStructure}" 
+                    <!-- Скобочная структура -->
+                    <TextBlock Text="Скобочная структура:" Foreground="Gray"/>
+                    <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto" Margin="0,5,0,0">
+                        <TextBlock Text="{Binding ParenthesisStructure}" 
                                FontFamily="Consolas" 
                                FontSize="11" 
                                TextWrapping="Wrap"
                                Foreground="#2c3e50"/>
-                </ScrollViewer>
+                    </ScrollViewer>
 
-                <!-- Легенда (подсказка) -->
-                <StackPanel VerticalAlignment="Bottom" Margin="0,30,0,0">
-                    <TextBlock Text="Легенда:" FontWeight="Bold" Margin="0,0,0,5"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <Ellipse Width="10" Height="10" Fill="LightGray" Stroke="Gray"/>
-                        <TextBlock Text=" - Не посещено" Margin="5,0"/>
+                    <!-- Легенда (подсказка) -->
+                    <StackPanel VerticalAlignment="Bottom" Margin="0,30,0,0">
+                        <TextBlock Text="Легенда:" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                            <Ellipse Width="10" Height="10" Fill="LightGray" Stroke="Gray"/>
+                            <TextBlock Text=" - В обработке" Margin="5,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                            <Ellipse Width="10" Height="10" Fill="LightBlue" Stroke="LightBlue"/>
+                            <TextBlock Text=" - Посещена" Margin="5,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                            <Ellipse Width="10" Height="10" Fill="LightPink" Stroke="LightPink"/>
+                            <TextBlock Text=" - Завершено" Margin="5,0"/>
+                        </StackPanel>
+                        <TextBlock Text="d/f - Время входа/выхода" FontSize="10" Foreground="Gray" Margin="0,5,0,0"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <Ellipse Width="10" Height="10" Fill="Orange" Stroke="DarkOrange"/>
-                        <TextBlock Text=" - В обработке (Queue)" Margin="5,0"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <Ellipse Width="10" Height="10" Fill="LightGreen" Stroke="Green"/>
-                        <TextBlock Text=" - Завершено" Margin="5,0"/>
-                    </StackPanel>
-                    <TextBlock Text="d/f - Время входа/выхода" FontSize="10" Foreground="Gray" Margin="0,5,0,0"/>
+
                 </StackPanel>
-
-            </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <!-- Правая панель: Холст -->
