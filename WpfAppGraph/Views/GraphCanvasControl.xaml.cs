@@ -15,15 +15,16 @@ namespace WpfAppGraph.Views
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Отлавливание кликов по холсту
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void MainCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Проверяем, что DataContext это нужная нам ViewModel
             if (DataContext is GraphCanvasVM vm)
             {
-                // Получаем позицию мыши относительно Canvas (или Grid, который мы сейчас добавим)
                 var position = e.GetPosition((IInputElement)sender);
-
-                // Вызываем метод ViewModel
                 vm.OnCanvasClick(position);
             }
         }

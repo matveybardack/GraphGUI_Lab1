@@ -10,19 +10,14 @@ namespace WpfAppGraph.ViewModels
 {
     public partial class DrawGraphVM : ObservableObject
     {
-        // Визуальная модель холста (содержит списки вершин и ребер для UI)
         public GraphCanvasVM GraphCanvas { get; } = new GraphCanvasVM();
-
-        // Логическая модель графа (содержит структуру для алгоритмов)
         private readonly GraphModel _graphModel = new GraphModel();
 
-        // --- Состояние интерфейса ---
+        [ObservableProperty]
+        private GraphTool _currentTool = GraphTool.AddVertex; 
 
         [ObservableProperty]
-        private GraphTool _currentTool = GraphTool.AddVertex; // По умолчанию рисуем вершины
-
-        [ObservableProperty]
-        private object _activeDialog; // Если не null, отображается модальное окно
+        private object _activeDialog;
 
         [ObservableProperty]
         private int _vertexCount;
@@ -33,21 +28,20 @@ namespace WpfAppGraph.ViewModels
         [ObservableProperty]
         private DataView _adjacencyMatrixView;
 
-        // Временное хранение первой вершины при создании ребра
         private VertexViewModel _firstSelectedVertex;
 
         public DrawGraphVM()
         {
-            // Подписка на события от холста (клики, которые пробросил GraphCanvasVM)
             GraphCanvas.CanvasClicked += OnCanvasClicked;
             GraphCanvas.VertexClicked += OnVertexClicked;
         }
 
-        // --- Обработка событий холста ---
-
+        /// <summary>
+        /// Добавление вершины
+        /// </summary>
+        /// <param name="point"> координаты добавления на холст </param>
         private void OnCanvasClicked(Point point)
         {
-            // Если у нас выбрано создание ребра и мы кликнули мимо вершины -> сбрасываем выделение
             if (CurrentTool == GraphTool.AddEdge && _firstSelectedVertex != null)
             {
                 ResetSelection();
@@ -56,22 +50,22 @@ namespace WpfAppGraph.ViewModels
 
             if (CurrentTool == GraphTool.AddVertex)
             {
-                // 1. Добавляем в Визуальную часть
                 var newVertexVm = GraphCanvas.AddVertex(point.X, point.Y);
-
-                // 2. Добавляем в Логическую часть
                 _graphModel.AddVertex(newVertexVm.Id);
 
                 UpdateStats();
             }
         }
 
+        /// <summary>
+        /// Добавление ребра / установка цели
+        /// </summary>
+        /// <param name="vertex"> вершина, на которую нажали </param>
         private void OnVertexClicked(VertexViewModel vertex)
         {
             switch (CurrentTool)
             {
                 case GraphTool.AddVertex:
-                    // При режиме добавления вершин клик по существующей ничего не делает
                     break;
 
                 case GraphTool.SetTarget:
@@ -84,48 +78,50 @@ namespace WpfAppGraph.ViewModels
             }
         }
 
-        // --- Логика инструментов ---
-
+        /// <summary>
+        /// Установка цели
+        /// </summary>
+        /// <param name="vertex"></param>
         private void HandleSetTarget(VertexViewModel vertex)
         {
-            // Сбрасываем предыдущую цель (если была)
             var oldTarget = GraphCanvas.Vertices.FirstOrDefault(v => v.State == VertexState.Target);
             oldTarget?.State = VertexState.Default;
 
-            // Если кликнули по той же самой - просто снимаем выделение
             if (oldTarget == vertex) return;
 
-            // Назначаем новую
             vertex.State = VertexState.Target;
-            // В модели графа хранить "Target" не обязательно, это параметр алгоритма, 
-            // который будет передан при запуске DFS/BFS.
         }
 
+        /// <summary>
+        /// Добавление ребра
+        /// </summary>
+        /// <param name="clickedVertex"> выбранная вершина </param>
         private void HandleAddEdge(VertexViewModel clickedVertex)
         {
-            // 1. Если это первый клик (начало ребра)
             if (_firstSelectedVertex == null)
             {
                 _firstSelectedVertex = clickedVertex;
-                _firstSelectedVertex.State = VertexState.Selected; // Подсвечиваем оранжевым
+                _firstSelectedVertex.State = VertexState.Selected; // Подсвечивание первой вершины
             }
-            // 2. Если кликнули по той же самой вершине (отмена или петля)
+
             else if (_firstSelectedVertex == clickedVertex)
             {
-                // Допустим, мы пока запретим петли или просто сбросим выделение
-                ResetSelection();
+                ResetSelection(); //TODO: Добавление петли
             }
             // 3. Если это второй клик (конец ребра)
             else
             {
-                // Открываем диалог настройки ребра
                 OpenEdgeDialog(_firstSelectedVertex, clickedVertex);
             }
         }
 
+        /// <summary>
+        /// Открытие диалогового окна
+        /// </summary>
+        /// <param name="source"> откуда </param>
+        /// <param name="target"> куда </param>
         private void OpenEdgeDialog(VertexViewModel source, VertexViewModel target)
         {
-            // Создаем VM для диалога
             var dialogVm = new EdgeDialogVM(
                 onConfirm: (weight, isDirected) =>
                 {
@@ -142,26 +138,31 @@ namespace WpfAppGraph.ViewModels
             ActiveDialog = dialogVm;
         }
 
+        /// <summary>
+        /// Создвние ребра
+        /// </summary>
+        /// <param name="source"> вершина, из которой выходит </param>
+        /// <param name="target"> вершина, в которую идет </param>
+        /// <param name="weight"> вес </param>
+        /// <param name="isDirected"> является ли ориентированным </param>
         private void CreateEdge(VertexViewModel source, VertexViewModel target, double weight, bool isDirected)
         {
-            // 1. Визуальное добавление
             GraphCanvas.AddEdge(source, target, weight, isDirected);
-
-            // 2. Логическое добавление
             _graphModel.AddEdge(source.Id, target.Id, weight, isDirected);
 
-            UpdateStats();
             ResetSelection();
+            UpdateStats();
         }
 
         private void CloseDialog() => ActiveDialog = null;
 
+        /// <summary>
+        /// Снятие выделения первой вершины
+        /// </summary>
         private void ResetSelection()
         {
             if (_firstSelectedVertex != null)
             {
-                // Если она была Target, возвращаем Target, иначе Default
-                // (упрощенно возвращаем Default, если она не Target)
                 if (_firstSelectedVertex.State != VertexState.Target)
                     _firstSelectedVertex.State = VertexState.Default;
 
@@ -178,27 +179,21 @@ namespace WpfAppGraph.ViewModels
             UpdateStats();
         }
 
+        /// <summary>
+        /// Построение матрицы смежности
+        /// </summary>
         private void BuildAdjacencyMatrixDataTable()
         {
-            // 1. Получаем данные из модели
             var vertices = _graphModel.GetVertices();
             var matrix = _graphModel.GetAdjacencyMatrix();
             int n = vertices.Count;
 
-            // 2. Создаем DataTable
             var table = new DataTable();
 
-            // 3. Создаем столбцы
-            // Первый столбец - заголовок ряда (ID вершины)
             table.Columns.Add("v", typeof(string));
-
-            // Остальные столбцы - ID вершин
             foreach (var vertexId in vertices)
-            {
                 table.Columns.Add(vertexId.ToString(), typeof(string));
-            }
 
-            // 4. Заполняем строки
             for (int i = 0; i < n; i++)
             {
                 var row = table.NewRow();
@@ -207,26 +202,24 @@ namespace WpfAppGraph.ViewModels
                 for (int j = 0; j < n; j++)
                 {
                     double val = matrix[i, j];
-                    // Если Infinity, ставим красивый знак или прочерк, иначе вес
-                    // Индекс смещен на +1, т.к. 0-й столбец это заголовок
                     row[j + 1] = double.IsPositiveInfinity(val) ? "-" : val.ToString("0.#");
                 }
                 table.Rows.Add(row);
             }
 
-            // 5. Обновляем свойство для UI
             AdjacencyMatrixView = table.DefaultView;
         }
 
+        /// <summary>
+        /// Обновление холста
+        /// </summary>
         private void UpdateStats()
         {
             VertexCount = GraphCanvas.Vertices.Count;
             EdgeCount = GraphCanvas.Edges.Count;
-            // При обновлении состояния можно перестраивать матрицу смежности
             BuildAdjacencyMatrixDataTable();
         }
 
-        // Метод для получения модели (понадобится другим вкладкам/VM)
         public GraphModel GetGraphModel() => _graphModel;
     }
 }

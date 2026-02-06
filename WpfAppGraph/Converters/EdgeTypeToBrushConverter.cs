@@ -16,7 +16,7 @@ namespace WpfAppGraph.Converters
                 EdgeType.BackEdge => Brushes.Red,
                 EdgeType.ForwardEdge => Brushes.Green,
                 EdgeType.CrossEdge => Brushes.Orange,
-                _ => Brushes.Black // Default
+                _ => Brushes.Black
             };
         }
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;

@@ -10,7 +10,7 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
-        <!-- Стиль для скругленных кнопок (как на вкладке DFS) -->
+        <!-- Стиль для кнопок -->
         <Style x:Key="RoundedBtn" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -29,12 +29,10 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="240"/>
-            <!-- Панель инструментов -->
             <ColumnDefinition Width="*"/>
-            <!-- Холст -->
         </Grid.ColumnDefinitions>
 
-        <!-- Левая панель -->
+        <!-- Панель управления -->
         <Border Grid.Column="0" Background="#f8f9fa" BorderBrush="LightGray" BorderThickness="0,0,1,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="15">
@@ -46,8 +44,6 @@
                                TextWrapping="Wrap"
                                Margin="0,0,0,20"/>
 
-
-                    <!-- Кнопки управления -->
                     <Button Content="Найти компоненты" 
                             Command="{Binding StartSccCommand}" 
                             Background="#16a085" 
@@ -73,7 +69,6 @@
                                Margin="0,0,0,10" 
                                TextWrapping="Wrap"/>
 
-                    <!-- Детальная информация о компонентах -->
                     <StackPanel Visibility="{Binding IsResultAvailable, Converter={StaticResource BoolToVis}}">
                         <TextBlock Text="Количество компонентов:" Foreground="Gray"/>
                         <TextBlock Text="{Binding ComponentCount}" 
@@ -83,7 +78,6 @@
                                    Margin="0,0,0,10"/>
 
                         <TextBlock Text="Состав компонентов:" Foreground="Gray" Margin="0,5,0,0"/>
-                        <!-- Список компонентов текстом -->
                         <Border Background="White" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="3" Margin="0,5,0,0">
                             <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto" Padding="5">
                                 <TextBlock Text="{Binding ComponentsOutput}" 
@@ -108,7 +102,6 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="20" Height="3" Fill="Red"/>
-                            <!-- Цвет BackEdge -->
                             <TextBlock Text=" - Внутреннее ребро SCC" FontSize="11" Margin="5,0"/>
                         </StackPanel>
 
@@ -128,7 +121,6 @@
 
         <!-- Холст -->
         <Border Grid.Column="1" Background="White">
-            <!-- Используем тот же контрол холста -->
             <local:GraphCanvasControl DataContext="{Binding GraphCanvas}"/>
         </Border>
     </Grid>

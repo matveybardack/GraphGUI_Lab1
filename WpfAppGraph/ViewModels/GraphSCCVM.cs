@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WpfAppGraph.Configs;
 using WpfAppGraph.Models;
 using WpfAppGraph.Models.Enums;
 using WpfAppGraph.Models.Structs;
@@ -12,13 +13,10 @@ namespace WpfAppGraph.ViewModels
 {
     public partial class GraphSCCVM : ObservableObject
     {
-        // Холст для отображения
         public GraphCanvasVM GraphCanvas { get; } = new GraphCanvasVM();
 
         private readonly GraphModel _graphModel;
         private readonly DrawGraphVM _sourceDrawVM;
-
-        // --- Результаты ---
 
         [ObservableProperty]
         private string _resultStatus = "Ожидание запуска...";
@@ -27,7 +25,7 @@ namespace WpfAppGraph.ViewModels
         private int _componentCount;
 
         [ObservableProperty]
-        private string _componentsOutput; // Текстовое представление списков
+        private string _componentsOutput;
 
         [ObservableProperty]
         private bool _isResultAvailable;
@@ -44,7 +42,7 @@ namespace WpfAppGraph.ViewModels
         }
 
         /// <summary>
-        /// Синхронизация графа с вкладкой рисования.
+        /// Синхронизация графа.
         /// </summary>
         [RelayCommand(CanExecute = nameof(CanInteract))]
         public void SyncGraph()
@@ -53,25 +51,20 @@ namespace WpfAppGraph.ViewModels
 
             // Сброс результатов
             IsResultAvailable = false;
-            ResultStatus = "Граф загружен. Нажмите 'Найти компоненты'.";
+            ResultStatus = "Ожидание запуска...";
             ComponentsOutput = string.Empty;
             ComponentCount = 0;
 
-            // Сбрасываем цвета на всякий случай
             GraphCanvas.ResetVisuals();
         }
 
         /// <summary>
-        /// Запуск алгоритма поиска SCC.
+        /// Запуск поиска сильно связных компонентов
         /// </summary>
         [RelayCommand(CanExecute = nameof(CanInteract))]
         private async Task StartScc()
         {
-            // 1. Авто-синхронизация (для удобства)
-            if (GraphCanvas.Vertices.Count == 0)
-            {
-                SyncGraph();
-            }
+            SyncGraph();
 
             if (GraphCanvas.Vertices.Count == 0)
             {
@@ -83,32 +76,22 @@ namespace WpfAppGraph.ViewModels
             IsResultAvailable = false;
             ResultStatus = "Выполняется поиск компонентов...";
 
-            // Сбрасываем визуальные эффекты перед запуском
-            GraphCanvas.ResetVisuals();
-
-            // 2. Запуск алгоритма в модели
             var resultData = new SccResult();
-            // Получаем ленивую коллекцию шагов
             var steps = _graphModel.RunFindStronglyConnectedComponents(resultData);
 
-            // 3. Анимация
+            // Анимация
             foreach (var step in steps)
             {
                 GraphCanvas.ApplyAlgorithmStep(step);
-
-                // Небольшая задержка для визуализации процесса
-                // Можно уменьшить, если шагов слишком много
-                await Task.Delay(150);
+                await Task.Delay(Parameters.AnimationDelayMs);
             }
 
-            // 4. Формирование отчета
             ComponentCount = resultData.ComponentCount;
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < resultData.Components.Count; i++)
             {
                 var comp = resultData.Components[i];
-                // Сортируем вершины внутри компонента для красоты
                 comp.Sort();
                 sb.AppendLine($"SCC #{i + 1}: {{ {string.Join(", ", comp)} }}");
             }

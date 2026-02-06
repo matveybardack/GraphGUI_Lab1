@@ -4,6 +4,9 @@ using System.Windows.Data;
 
 namespace WpfAppGraph.Converters
 {
+    /// <summary>
+    /// Конвертер для связывания перечислений с RadioButton в WPF
+    /// </summary>
     public class EnumToBoolConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

@@ -5,18 +5,19 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WpfAppGraph.Views"
              xmlns:converters="clr-namespace:WpfAppGraph.Converters"
+             xmlns:convs="clr-namespace:System.Windows.Converters;assembly=WindowsBase"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
-        <!-- Ваши конвертеры (без изменений) -->
+        <!-- Конвертеры -->
         <converters:VertexStateToBrushConverter x:Key="VertexStateToBrushConverter"/>
         <converters:VertexStateToBorderBrushConverter x:Key="VertexStateToBorderBrushConverter"/>
         <converters:EdgeTypeToBrushConverter x:Key="EdgeTypeToBrushConverter"/>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
-        <!-- Шаблон вершины (УБРАЛИ Canvas.Left/Top отсюда) -->
+        <!-- Шаблон вершины -->
         <DataTemplate x:Key="VertexTemplate">
-            <Grid Width="40" Height="40">
+            <Grid Width="{Binding VertexSquareSize, Mode=OneTime}" Height="{Binding VertexSquareSize, Mode=OneTime}">
                 <Ellipse x:Name="Circle" Fill="{Binding State, Converter={StaticResource VertexStateToBrushConverter}}" 
                  Stroke="{Binding State, Converter={StaticResource VertexStateToBorderBrushConverter}}" StrokeThickness="2"/>
                 <StackPanel VerticalAlignment="Center" IsHitTestVisible="False">
@@ -28,7 +29,6 @@
 
         <!-- Шаблон ребра -->
         <DataTemplate x:Key="EdgeTemplate">
-            <!-- Используем Canvas, чтобы элементы позиционировались абсолютно относительно (0,0) -->
             <Canvas>
                 <Line IsHitTestVisible="False"
               X1="{Binding X1}" Y1="{Binding Y1}"
@@ -40,19 +40,14 @@
               Data="{Binding ArrowGeometry}"
               Stroke="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
               Fill="{Binding Type, Converter={StaticResource EdgeTypeToBrushConverter}}"
-              Visibility="{Binding IsDirected, Converter={StaticResource BoolToVisibilityConverter}}"/>
+              Visibility="{Binding IsDirected, Converter={StaticResource BoolToVis}}"/>
 
-                <!-- Текст веса -->
-                <!-- Убрали Alignment="Center" и RenderTransform с TranslateTransform -->
-                <!-- Используем Canvas.Left/Top для прямой установки позиции -->
                 <TextBlock Text="{Binding Weight, StringFormat={}{0:F1}}"
                    Canvas.Left="{Binding LabelX}"
                    Canvas.Top="{Binding LabelY}"
                    Background="White" Padding="2,0" FontWeight="Bold" FontSize="10"
                    IsHitTestVisible="False">
-            <!-- Сдвигаем текст назад на половину его предполагаемой ширины/высоты, 
-                 чтобы координаты указывали на центр плашки, а не на левый верхний угол.
-                 Примерно -10 по X и -8 по Y для небольших чисел. -->
+                    
                     <TextBlock.RenderTransform>
                         <TranslateTransform X="-10" Y="-8"/>
                     </TextBlock.RenderTransform>
@@ -61,11 +56,10 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <!-- ИСПРАВЛЕНИЕ 1: Обработчик клика прямо на корневом Grid. 
-         Background="Transparent" обязателен, чтобы Grid ловил клики по пустому месту. -->
+    <!-- Обработчик кликов -->
     <Grid Background="Transparent" MouseLeftButtonDown="MainCanvas_MouseLeftButtonDown">
 
-        <!-- Слой 1: Ребра -->
+        <!-- Ребра -->
         <ItemsControl ItemsSource="{Binding Edges}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -79,7 +73,7 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <!-- Слой 2: Вершины -->
+        <!-- Вершины -->
         <ItemsControl ItemsSource="{Binding Vertices}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -87,8 +81,6 @@
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
 
-            <!-- ИСПРАВЛЕНИЕ 2: ItemContainerStyle! 
-                 Это заставляет сам контейнер элемента позиционироваться на Canvas -->
             <ItemsControl.ItemContainerStyle>
                 <Style TargetType="ContentPresenter">
                     <Setter Property="Canvas.Left" Value="{Binding X}"/>
@@ -112,7 +104,5 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-
-        <!-- УБРАЛИ лишний ClickCanvas снизу, теперь клики ловит Grid -->
     </Grid>
 </UserControl>

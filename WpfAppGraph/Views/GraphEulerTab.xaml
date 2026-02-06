@@ -32,7 +32,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Левая панель -->
+        <!-- Панель инструментов -->
         <Border Grid.Column="0" Background="#f8f9fa" BorderBrush="LightGray" BorderThickness="0,0,1,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="15">
@@ -61,7 +61,7 @@
                             Height="35"
                             Margin="0,0,0,10"/>
 
-                    <Button Content="Сбросить / Синхронизировать" 
+                    <Button Content="Сбросить/Синхронизировать" 
                             Command="{Binding SyncGraphCommand}" 
                             Background="#e74c3c" 
                             Style="{StaticResource RoundedBtn}"
@@ -96,7 +96,6 @@
                         <TextBlock Text="Легенда:" FontWeight="Bold" Margin="0,0,0,5"/>
                         <StackPanel Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="20" Height="3" Fill="Red"/>
-                            <!-- Используем цвет BackEdge -->
                             <TextBlock Text=" - Пройденное ребро" FontSize="11" Margin="5,0"/>
                         </StackPanel>
                         <TextBlock Text="Флёри: идет последовательно." FontSize="10" Foreground="Gray" Margin="0,5,0,0"/>

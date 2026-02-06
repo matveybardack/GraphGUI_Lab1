@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using WpfAppGraph.Configs;
 using WpfAppGraph.Models;
 using WpfAppGraph.Models.Enums;
 
@@ -23,9 +24,11 @@ namespace WpfAppGraph.ViewModels
         [ObservableProperty]
         private string _iterationInfo;
 
-        // Вычисляемые свойства для удобства (центр круга 40x40)
-        public double CenterX => X + 20;
-        public double CenterY => Y + 20;
+        [ObservableProperty]
+        private double _vertexSquareSize = Parameters.VertexRadius * 2;
+
+        public double CenterX => X + Parameters.VertexRadius;
+        public double CenterY => Y + Parameters.VertexRadius;
 
         public VertexViewModel(int id, double x, double y)
         {

@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using WpfAppGraph.Models;
 using WpfAppGraph.Models.Enums;
+using WpfAppGraph.Configs;
 
 namespace WpfAppGraph.ViewModels
 {
@@ -16,7 +17,7 @@ namespace WpfAppGraph.ViewModels
         [ObservableProperty]
         private double _weight;
 
-        // Если меняется направленность, нужно перерисовать стрелку
+        // Ориентированное ребро или нет
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ArrowGeometry))]
         private bool _isDirected;
@@ -24,19 +25,18 @@ namespace WpfAppGraph.ViewModels
         [ObservableProperty]
         private EdgeType _type;
 
-        // --- Координаты линии (статичные, вычисляются один раз) ---
+        // Координаты линии
         public double X1 => Source.CenterX;
         public double Y1 => Source.CenterY;
         public double X2 => Target.CenterX;
         public double Y2 => Target.CenterY;
 
         // Координаты для текста (середина)
-        public double LabelX => (X1 + X2) / 2 - 10;
-        public double LabelY => (Y1 + Y2) / 2 - 10;
+        public double LabelX => (X1 + X2) / 2 - Parameters.VertexRadius / 2;
+        public double LabelY => (Y1 + Y2) / 2 - Parameters.VertexRadius / 2;
 
-        // Геометрия стрелки (зависит от IsDirected)
+        // Геометрия стрелки если есть
         public Geometry ArrowGeometry => IsDirected ? _cachedArrowGeometry : Geometry.Empty;
-
         private readonly Geometry _cachedArrowGeometry;
 
         public EdgeViewModel(VertexViewModel source, VertexViewModel target, double weight, bool isDirected)
@@ -44,10 +44,8 @@ namespace WpfAppGraph.ViewModels
             Source = source;
             Target = target;
             Weight = weight;
-            _isDirected = isDirected; // Присваиваем поле напрямую, чтобы не триггерить PropertyChanged в конструкторе лишний раз
+            _isDirected = isDirected;
             Type = EdgeType.Default;
-
-            // 1. Предварительно вычисляем геометрию стрелки (она не изменится, т.к. вершины не двигаются)
             _cachedArrowGeometry = CalculateArrowGeometry();
         }
 
@@ -57,18 +55,18 @@ namespace WpfAppGraph.ViewModels
             double dy = Y2 - Y1;
             double length = Math.Sqrt(dx * dx + dy * dy);
 
-            // Если вершины совпадают или слишком близко (внутри радиуса), стрелку не рисуем
-            if (length <= 20) return Geometry.Empty;
+            // Если вершины слишком близко, то без стрелки
+            if (length <= Parameters.VertexRadius) return Geometry.Empty;
 
             double ux = dx / length;
             double uy = dy / length;
 
-            // Отступаем 20 пикселей от центра целевой вершины (радиус круга)
-            double endX = X2 - ux * 20;
-            double endY = Y2 - uy * 20;
+            double endX = X2 - ux * Parameters.VertexRadius;
+            double endY = Y2 - uy * Parameters.VertexRadius;
 
-            double arrowLen = 10;
-            double arrowWidth = 5;
+            // Размеры стрелки зависят от радиуса вершины
+            double arrowLen = Parameters.VertexRadius / 2;
+            double arrowWidth = arrowLen / 2;
 
             double px = -uy;
             double py = ux;

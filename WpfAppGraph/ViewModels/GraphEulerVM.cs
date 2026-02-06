@@ -44,7 +44,7 @@ namespace WpfAppGraph.ViewModels
         {
             GraphCanvas.CloneFrom(_sourceDrawVM.GraphCanvas);
             IsResultAvailable = false;
-            ResultStatus = "Граф загружен. Выберите алгоритм.";
+            ResultStatus = "Ожидание запуска...";
             PathString = string.Empty;
             GraphCanvas.ResetVisuals();
         }
@@ -52,7 +52,7 @@ namespace WpfAppGraph.ViewModels
         [RelayCommand(CanExecute = nameof(CanInteract))]
         private async Task StartEuler()
         {
-            if (GraphCanvas.Vertices.Count == 0) SyncGraph();
+            SyncGraph();
 
             if (GraphCanvas.Vertices.Count == 0)
             {
@@ -62,28 +62,22 @@ namespace WpfAppGraph.ViewModels
 
             IsAnimating = true;
             IsResultAvailable = false;
-            ResultStatus = "Проверка графа...";
-
-            GraphCanvas.ResetVisuals();
+            ResultStatus = "Выполняется поиск...";
 
             var result = new EulerResult();
             IEnumerable<AlgorithmStep> steps;
 
             // Выбор алгоритма
-            if (AlgorithmType == EulerAlgorithmType.Fleury)
+            steps = (AlgorithmType) switch
             {
-                steps = _graphModel.RunFleuryAlgorithm(result);
-            }
-            else
-            {
-                steps = _graphModel.RunHierholzerAlgorithm(result);
-            }
+                EulerAlgorithmType.Fleury => _graphModel.RunFleuryAlgorithm(result),
+                EulerAlgorithmType.Hierholzer => _graphModel.RunHierholzerAlgorithm(result),
+                _ => null
+            };
 
-            // Предварительная проверка (если метод сразу вернул break)
+            // Предварительная проверка
             if (!string.IsNullOrEmpty(result.StatusMessage))
-            {
                 ResultStatus = result.StatusMessage;
-            }
 
             // Анимация
             foreach (var step in steps)
@@ -100,7 +94,6 @@ namespace WpfAppGraph.ViewModels
             }
             else
             {
-                // Если алгоритм прервался или граф не подходит
                 if (!IsResultAvailable)
                     ResultStatus = $"Неудача: {result.StatusMessage}";
             }

@@ -7,19 +7,18 @@
              xmlns:converters="clr-namespace:WpfAppGraph.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+    
     <UserControl.Resources>
-        <!-- Стандартные конвертеры для скрытия элементов или конвертации булевых значений -->
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </UserControl.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <!-- Левая панель немного шире, чтобы вместить текст структуры -->
-            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="230"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Левая панель инструментов и результатов -->
+        <!-- Панель инструментов -->
         <Border Grid.Column="0" Background="#f8f9fa" BorderBrush="LightGray" BorderThickness="0,0,1,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="15">
@@ -30,9 +29,6 @@
                            Foreground="#2c3e50"
                            Margin="0,0,0,20"/>
 
-                    <!-- Кнопка запуска -->
-                    <!-- IsEnabled привязываем к обратному свойству IsAnimating (через VM), 
-                     чтобы нельзя было запустить повторно во время анимации -->
                     <Button Content="Запустить поиск" 
                         Command="{Binding StartBfsCommand}" 
                         Height="35"
@@ -47,7 +43,7 @@
                         </Button.Resources>
                     </Button>
 
-                    <Button Content="Сбросить результаты" 
+                    <Button Content="Сбросить/Синхорнизировать" 
                         Command="{Binding SyncGraphFromDrawTabCommand}" 
                         Height="30"
                         Background="#e74c3c" 
@@ -124,13 +120,8 @@
             </ScrollViewer>
         </Border>
 
-        <!-- Правая панель: Холст -->
+        <!-- Холст -->
         <Border Grid.Column="1" Background="White">
-            <!-- 
-                Здесь мы используем готовый GraphCanvasControl.
-                Важно: DataContext этого контрола привязывается к свойству GraphCanvas 
-                из GraphBFSVM.
-            -->
             <local:GraphCanvasControl DataContext="{Binding GraphCanvas}"/>
         </Border>
 

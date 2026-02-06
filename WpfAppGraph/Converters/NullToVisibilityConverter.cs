@@ -7,6 +7,9 @@ using System.Windows.Data;
 
 namespace WpfAppGraph.Converters
 {
+    /// <summary>
+    /// Для отображения диалогового окна при добавлении ребер
+    /// </summary>
     public class NullToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => 

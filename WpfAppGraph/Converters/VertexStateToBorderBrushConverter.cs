@@ -15,8 +15,8 @@ namespace WpfAppGraph.Converters
                 VertexState.Target => Brushes.DarkRed,
                 VertexState.Visited => Brushes.SteelBlue,
                 VertexState.Active => Brushes.DimGray,
-                VertexState.Finished => Brushes.LightPink,
-                _ => Brushes.Black // Default
+                VertexState.Finished => Brushes.DeepPink,
+                _ => Brushes.Black 
             };
         }
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
