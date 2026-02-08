@@ -9,13 +9,10 @@ namespace WpfAppGraph.ViewModels
 {
     public partial class GraphBFSVM : ObservableObject
     {
-        // Холст для этой вкладки (независимый)
         public GraphCanvasVM GraphCanvas { get; } = new GraphCanvasVM();
 
         private readonly GraphModel _graphModel;
-        private readonly DrawGraphVM _sourceDrawVM; // Ссылка на VM рисования для копирования графа
-
-        // --- Результаты ---
+        private readonly DrawGraphVM _sourceDrawVM;
 
         [ObservableProperty]
         private string _resultStatus = "Ожидание запуска...";
@@ -49,7 +46,7 @@ namespace WpfAppGraph.ViewModels
         /// <summary>
         /// Выбор стартовой вершини
         /// </summary>
-        /// <param name="vertex"></param>
+        /// <param name="vertex"> выбранная вершина </param>
         private void OnVertexClicked(VertexViewModel vertex)
         {
             if (IsAnimating) return;
@@ -94,7 +91,7 @@ namespace WpfAppGraph.ViewModels
             _startVertex?.State = VertexState.Selected;
             targetVertex?.State = VertexState.Target;
 
-            var resultData = new BfsResult();
+            var resultData = new SearchResult();
             var steps = _graphModel.RunBfs(startId, targetId, resultData);
 
             // Анимация
@@ -104,7 +101,6 @@ namespace WpfAppGraph.ViewModels
                 await Task.Delay(Parameters.AnimationDelayMs);
             }
 
-            // 5. Вывод результатов
             PathLength = resultData.PathLength;
             ParenthesisStructure = resultData.ParenthesisStructure;
 

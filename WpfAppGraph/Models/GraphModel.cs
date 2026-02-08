@@ -6,8 +6,6 @@ namespace WpfAppGraph.Models
 {
     public class GraphModel
     {
-        // Основное хранилище: Список смежности (Adjacency List)
-        // Key: ID вершины, Value: Список исходящих ребер
         private readonly Dictionary<int, List<GraphEdge>> _adjacencyList;
         private readonly HashSet<int> _vertices;
 
@@ -17,8 +15,12 @@ namespace WpfAppGraph.Models
             _vertices = new HashSet<int>();
         }
 
-        #region Basic opers
+        #region Базовые операции
 
+        /// <summary>
+        /// Добавление вершины в модель
+        /// </summary>
+        /// <param name="id"> номер вершины </param>
         public void AddVertex(int id)
         {
             if (!_vertices.Contains(id))
@@ -28,8 +30,16 @@ namespace WpfAppGraph.Models
             }
         }
 
+        /// <summary>
+        /// Добавление ребра в модель.
+        /// </summary>
+        /// <param name="from"> исходная вершина </param>
+        /// <param name="to"> входная вершина </param>
+        /// <param name="weight"> вес ребра </param>
+        /// <param name="isDirected"> является ли ориентированным </param>
         public void AddEdge(int from, int to, double weight, bool isDirected)
         {
+            // Создание новых вершин, если таковых не было (только для модели)
             AddVertex(from);
             AddVertex(to);
 
@@ -53,8 +63,12 @@ namespace WpfAppGraph.Models
 
         #endregion
 
-        #region Matrix
+        #region Создание матриц
 
+        /// <summary>
+        /// Построение матрицы смежности
+        /// </summary>
+        /// <returns></returns>
         public double[,] GetAdjacencyMatrix()
         {
             var vertices = GetVertices();
@@ -86,6 +100,10 @@ namespace WpfAppGraph.Models
             return matrix;
         }
 
+        /// <summary>
+        /// Построение транспонированной матрицы смежности.
+        /// </summary>
+        /// <returns></returns>
         public double[,] GetTransposedAdjacencyMatrix()
         {
             double[,] original = GetAdjacencyMatrix();
@@ -112,35 +130,42 @@ namespace WpfAppGraph.Models
         /// <param name="targetId">ID целевой вершины (может быть null)</param>
         /// <param name="result">Объект для записи итоговых результатов</param>
         /// <returns>Ленивая коллекция шагов для анимации</returns>
-        public IEnumerable<AlgorithmStep> RunBfs(int? startId, int? targetId, BfsResult result)
+        public IEnumerable<AlgorithmStep> RunBfs(int? startId, int? targetId, SearchResult result)
         {
             var allVertices = GetVertices();
+
             if (startId.HasValue)
             {
-                allVertices.Remove(startId.Value);
-                allVertices.Insert(0, startId.Value);
+                if (allVertices.Contains(startId.Value))
+                {
+                    allVertices.Remove(startId.Value);
+                    allVertices.Insert(0, startId.Value);
+                }
             }
 
             // Инициализация структур данных
             var queue = new Queue<int>();
-            var parentMap = new Dictionary<int, int>(); // Для восстановления пути
-            var discoveryTime = new Dictionary<int, int>(); // Время входа (d)
-            var finishTime = new Dictionary<int, int>();    // Время выхода (f)
+            var parentMap = new Dictionary<int, int>();
+            var discoveryTime = new Dictionary<int, int>();
+            var finishTime = new Dictionary<int, int>();
             var visited = new HashSet<int>();
 
             int timer = 1;
             StringBuilder structBuilder = new StringBuilder();
+            bool globalTargetFound = false;
 
             foreach (var root in allVertices)
             {
-                // Начало алгоритма
+                if (visited.Contains(root))
+                    continue;
+
+                // Начало алгоритма для текущей компоненты связности
                 queue.Enqueue(root);
                 visited.Add(root);
                 discoveryTime[root] = timer++;
 
-                structBuilder.Append($"({startId} "); // Открываем скобку для структуры
+                structBuilder.Append($"({root} ");
 
-                // Шаг 1: Анимация старта (красим в Active/Visited, пишем время входа)
                 yield return new AlgorithmStep
                 {
                     VertexId = root,
@@ -148,27 +173,15 @@ namespace WpfAppGraph.Models
                     IterationInfo = $"{discoveryTime[root]}/-"
                 };
 
-                bool targetFound = false;
-
                 while (queue.Count > 0)
                 {
                     int u = queue.Dequeue();
 
-                    // Для красоты анимации: когда достаем из очереди, можно подсвечивать как "текущий обрабатываемый"
-                    // Но в BFS вершина обычно красится при добавлении. Оставим логику:
-                    // Visited (серый) - в очереди, Finished (черный) - обработан.
-
                     if (targetId.HasValue && u == targetId.Value)
-                    {
-                        targetFound = true;
-                        // Если цель найдена, можно прерывать поиск, если нам нужен только путь.
-                        // Если нужно построить полное дерево обхода компоненты связности - убираем break.
-                        // Для задачи поиска пути обычно прерывают.
-                    }
+                        globalTargetFound = true;
 
                     if (_adjacencyList.ContainsKey(u))
                     {
-                        // Сортируем соседей для детерминированности (не обязательно, но полезно для UI)
                         var neighbors = _adjacencyList[u].OrderBy(e => e.To).ToList();
 
                         foreach (var edge in neighbors)
@@ -177,38 +190,32 @@ namespace WpfAppGraph.Models
                             if (!visited.Contains(v))
                             {
                                 visited.Add(v);
-                                parentMap[v] = u; // Запоминаем откуда пришли
+                                parentMap[v] = u; // родитель
                                 discoveryTime[v] = timer++;
                                 structBuilder.Append($"({v} ");
 
                                 queue.Enqueue(v);
 
-                                // Шаг 2: Анимация открытия соседа (ребро + вершина)
                                 yield return new AlgorithmStep
                                 {
                                     VertexId = v,
-                                    NewVertexState = VertexState.Visited, // Добавили в очередь
+                                    NewVertexState = VertexState.Visited,
                                     IterationInfo = $"{discoveryTime[v]}/-",
                                     EdgeFromId = u,
                                     EdgeToId = v,
-                                    NewEdgeType = EdgeType.TreeEdge // Ребро дерева обхода
+                                    NewEdgeType = EdgeType.TreeEdge
                                 };
 
-                                // Если нашли цель прямо сейчас
                                 if (targetId.HasValue && v == targetId.Value)
-                                {
-                                    targetFound = true;
-                                    // Можно сделать yield break здесь, если хотим мгновенно остановиться
-                                }
+                                    globalTargetFound = true;
                             }
                         }
                     }
 
-                    // Завершение обработки вершины u
+                    // Завершение обработки вершины
                     finishTime[u] = timer++;
-                    structBuilder.Append($") "); // Закрываем скобку
+                    structBuilder.Append($") ");
 
-                    // Шаг 3: Вершина полностью обработана
                     yield return new AlgorithmStep
                     {
                         VertexId = u,
@@ -216,31 +223,48 @@ namespace WpfAppGraph.Models
                         IterationInfo = $"{discoveryTime[u]}/{finishTime[u]}"
                     };
                 }
+            }
 
-                // --- Формирование результатов ---
-                result.IsTargetFound = targetFound;
-                result.ParenthesisStructure = structBuilder.ToString().Trim();
+            result.IsTargetFound = globalTargetFound;
+            result.ParenthesisStructure = structBuilder.ToString().Trim();
 
-                // Восстановление пути, если цель была задана и найдена
-                if (targetFound && targetId.HasValue)
+            if (globalTargetFound && targetId.HasValue)
+            {
+                var tempPath = new List<int>();
+                int curr = targetId.Value;
+                tempPath.Add(curr);
+
+                while (parentMap.ContainsKey(curr))
                 {
-                    int curr = targetId.Value;
-                    result.Path.Add(curr);
+                    int p = parentMap[curr];
 
-                    while (curr != startId)
+                    if (_adjacencyList.ContainsKey(p))
                     {
-                        if (!parentMap.ContainsKey(curr)) break; // На всякий случай
-
-                        int p = parentMap[curr];
-
-                        // Считаем вес ребра
-                        var edge = _adjacencyList[p].First(e => e.To == curr);
-                        result.PathLength += edge.Weight;
-
-                        curr = p;
-                        result.Path.Add(curr);
+                        var edge = _adjacencyList[p].FirstOrDefault(e => e.To == curr);
+                        if (edge != null)
+                            result.PathLength += edge.Weight;
                     }
-                    result.Path.Reverse(); // Путь от старта к цели
+
+                    curr = p;
+                    tempPath.Add(curr);
+                }
+
+                // действительно ли путь идет от startId
+                bool pathIsValid = true;
+                if (startId.HasValue && curr != startId.Value)
+                {
+                    pathIsValid = false;
+                }
+
+                if (pathIsValid)
+                {
+                    tempPath.Reverse();
+                    result.Path = tempPath;
+                }
+                else
+                {
+                    result.Path.Clear();
+                    result.PathLength = 0;
                 }
             }
         }
@@ -249,76 +273,46 @@ namespace WpfAppGraph.Models
 
         #region DFS
 
-        // Вспомогательный метод для заполнения итогового результата (путь и строка)
-        private void FillResult(DfsResult result, int? targetId, bool targetFound, StringBuilder sb, Dictionary<int, int> parentMap, Dictionary<int, List<GraphEdge>> adj)
-        {
-            result.ParenthesisStructure = sb.ToString().Trim();
-            result.IsTargetFound = targetFound;
-
-            if (targetFound && targetId.HasValue)
-            {
-                int curr = targetId.Value;
-                result.Path.Add(curr);
-                while (parentMap.ContainsKey(curr))
-                {
-                    int p = parentMap[curr];
-
-                    // Ищем вес
-                    if (adj.ContainsKey(p))
-                    {
-                        var edge = adj[p].FirstOrDefault(e => e.To == curr);
-                        if (edge != null) result.PathLength += edge.Weight;
-                    }
-
-                    curr = p;
-                    result.Path.Add(curr);
-                }
-                result.Path.Reverse();
-            }
-        }
-
         /// <summary>
-        /// Вариант 1: Итеративный DFS (на стеке).
-        /// Имитирует рекурсию с помощью стека для построения скобочной структуры.
+        /// DFS на стеке
         /// </summary>
-        public IEnumerable<AlgorithmStep> RunDfsIterative(int? startId, int? targetId, DfsResult result)
+        /// <param name="startId">ID стартовой вершины</param>
+        /// <param name="targetId">ID целевой вершины (может быть null)</param>
+        /// <param name="result">Объект для записи итоговых результатов</param>
+        /// <returns>Ленивая коллекция шагов для анимации</returns>
+        public IEnumerable<AlgorithmStep> RunDfsIterative(int? startId, int? targetId, SearchResult result)
         {
-            // Подготовка структур
+            // Инициализация структур
             var visited = new HashSet<int>();
             var parentMap = new Dictionary<int, int>();
             var discoveryTime = new Dictionary<int, int>();
             var finishTime = new Dictionary<int, int>();
-
-            // Стек хранит ID вершины. 
-            // Мы не удаляем вершину сразу, а ждем обработки всех детей для времени выхода.
             var stack = new Stack<int>();
 
             int timer = 1;
             StringBuilder structBuilder = new StringBuilder();
-            bool targetFound = false;
+            bool globalTargetFound = false;
 
-            // Определяем порядок обхода компонент связности
-            // Если startId задан, начинаем с него. Потом идем по остальным непосещенным.
             var allVertices = GetVertices();
-            if (startId.HasValue)
+            if (startId.HasValue && allVertices.Contains(startId.Value))
             {
-                // Перемещаем стартовую вершину в начало списка для приоритета
                 allVertices.Remove(startId.Value);
                 allVertices.Insert(0, startId.Value);
             }
 
             foreach (var root in allVertices)
             {
-                if (visited.Contains(root)) continue;
-                if (targetFound && targetId.HasValue) break; // Если цель найдена и нам нужен только путь
+                // Если вершина уже посещена в предыдущей компоненте
+                if (visited.Contains(root))
+                    continue;
 
                 stack.Push(root);
 
                 while (stack.Count > 0)
                 {
-                    int u = stack.Peek(); // Смотрим, но пока не извлекаем
+                    int u = stack.Peek();
 
-                    // 1. Вход в вершину (White -> Gray)
+                    // Начало исследования вершины
                     if (!visited.Contains(u))
                     {
                         visited.Add(u);
@@ -328,150 +322,166 @@ namespace WpfAppGraph.Models
                         yield return new AlgorithmStep
                         {
                             VertexId = u,
-                            NewVertexState = VertexState.Active, // Gray
+                            NewVertexState = VertexState.Active,
                             IterationInfo = $"{discoveryTime[u]}/-"
                         };
 
                         if (targetId.HasValue && u == targetId.Value)
-                        {
-                            targetFound = true;
-                            // Не прерываем сразу, чтобы корректно закрыть скобки текущего стека?
-                            // Для поиска пути обычно прерывают, но для структуры лучше завершить ветку.
-                            // Давайте прервем поиск новых веток, но размотаем стек.
-                        }
+                            globalTargetFound = true;
                     }
 
-                    // 2. Поиск следующего непосещенного соседа
+                    // поиск соседей
                     bool hasUnvisitedNeighbor = false;
 
-                    if (_adjacencyList.ContainsKey(u) /*&& (!targetFound || targetId == null)*/) // Если нашли цель, в глубину не идем
+                    if (_adjacencyList.ContainsKey(u))
                     {
-                        // Сортируем для детерминированности
                         var neighbors = _adjacencyList[u].OrderBy(e => e.To).ToList();
 
                         foreach (var edge in neighbors)
                         {
+                            // исследование непосещенного соседа
                             int v = edge.To;
                             if (!visited.Contains(v))
                             {
                                 parentMap[v] = u;
-                                stack.Push(v); // Кладем в стек и немедленно переходим к ней (break)
+                                stack.Push(v);
                                 hasUnvisitedNeighbor = true;
 
-                                // Анимация ребра дерева (Tree Edge)
                                 yield return new AlgorithmStep
                                 {
                                     EdgeFromId = u,
                                     EdgeToId = v,
                                     NewEdgeType = EdgeType.TreeEdge
                                 };
-                                break; // Уходим в глубину (эмуляция рекурсии)
-                            }
-                            else
-                            {
-                                // Классификация остальных ребер (для красоты)
-                                // Если сосед серый (в стеке и без finishTime) -> Обратное ребро
-                                // Если сосед черный (есть finishTime) -> Прямое или перекрестное
-                                // (Здесь упрощенная проверка, полная будет в методе 3 цветов)
+
+                                break;
                             }
                         }
                     }
 
-                    // 3. Выход из вершины (Gray -> Black), если нет непосещенных соседей
+                    // конец исследования вершины
                     if (!hasUnvisitedNeighbor)
                     {
-                        stack.Pop(); // Теперь извлекаем
+                        stack.Pop();
                         finishTime[u] = timer++;
                         structBuilder.Append($") ");
 
                         yield return new AlgorithmStep
                         {
                             VertexId = u,
-                            NewVertexState = VertexState.Finished, // Black
+                            NewVertexState = VertexState.Finished,
                             IterationInfo = $"{discoveryTime[u]}/{finishTime[u]}"
                         };
                     }
                 }
             }
 
-            FillResult(result, targetId, targetFound, structBuilder, parentMap, _adjacencyList);
+            result.IsTargetFound = globalTargetFound;
+            result.ParenthesisStructure = structBuilder.ToString().Trim();
+
+            if (globalTargetFound && targetId.HasValue)
+            {
+                var tempPath = new List<int>();
+                int curr = targetId.Value;
+                tempPath.Add(curr);
+
+                while (parentMap.ContainsKey(curr))
+                {
+                    int p = parentMap[curr];
+
+                    if (_adjacencyList.ContainsKey(p))
+                    {
+                        var edge = _adjacencyList[p].FirstOrDefault(e => e.To == curr);
+                        if (edge != null)
+                            result.PathLength += edge.Weight;
+                    }
+
+                    curr = p;
+                    tempPath.Add(curr);
+                }
+
+                // валидность пути
+                bool pathIsValid = true;
+                if (startId.HasValue && curr != startId.Value)
+                {
+                    pathIsValid = false;
+                }
+
+                if (pathIsValid)
+                {
+                    tempPath.Reverse();
+                    result.Path = tempPath;
+                }
+                else
+                {
+                    result.Path.Clear();
+                    result.PathLength = 0;
+                }
+            }
         }
 
         /// <summary>
-        /// Вариант 2: Рекурсивный DFS ("Алгоритм 3 цветов").
-        /// Использует системный стек вызовов. 
-        /// Цвета: Default(White) -> Active(Gray) -> Finished(Black).
+        /// Алгоритм dfs с покраской вершин
         /// </summary>
-        public IEnumerable<AlgorithmStep> RunDfsRecursive(int? startId, int? targetId, DfsResult result)
+        /// <param name="startId">ID стартовой вершины</param>
+        /// <param name="targetId">ID целевой вершины (может быть null)</param>
+        /// <param name="result">Объект для записи итоговых результатов</param>
+        /// <returns>Ленивая коллекция шагов для анимации</returns>
+        public IEnumerable<AlgorithmStep> RunDfsRecursive(int? startId, int? targetId, SearchResult result)
         {
-            var visited = new HashSet<int>();     // Множество "Серых" и "Черных"
-            var finished = new HashSet<int>();    // Множество "Черных" (для классификации ребер)
-
+            // Инициализация структур данных
+            var visited = new HashSet<int>();
             var parentMap = new Dictionary<int, int>();
             var discoveryTime = new Dictionary<int, int>();
             var finishTime = new Dictionary<int, int>();
 
             int timer = 1;
             StringBuilder structBuilder = new StringBuilder();
-            bool targetFound = false;
+            bool globalTargetFound = false;
 
-            // Подготовка очереди обхода (сначала выбранный старт, потом остальные)
             var allVertices = GetVertices();
-            if (startId.HasValue)
+            if (startId.HasValue && allVertices.Contains(startId.Value))
             {
                 allVertices.Remove(startId.Value);
                 allVertices.Insert(0, startId.Value);
             }
 
-            // Внешний цикл по компонентам связности
-            foreach (var u in allVertices)
-            {
-                if (!visited.Contains(u))
-                {
-                    if (targetFound && targetId.HasValue) break;
-
-                    // Запуск рекурсивной функции (через yield foreach пробрасываем шаги)
-                    foreach (var step in DfsVisit(u))
-                    {
-                        yield return step;
-                    }
-                }
-            }
-
-            // Локальная рекурсивная функция
+            // 3. Локальная функция для рекурсивного обхода
             IEnumerable<AlgorithmStep> DfsVisit(int u)
             {
-                // === WHITE -> GRAY ===
-                visited.Add(u); // Visited но не Finished = Gray
+                // --- ВХОД (White -> Gray) ---
+                visited.Add(u);
                 discoveryTime[u] = timer++;
                 structBuilder.Append($"({u} ");
 
                 yield return new AlgorithmStep
                 {
                     VertexId = u,
-                    NewVertexState = VertexState.Active, // Gray
+                    NewVertexState = VertexState.Active,
                     IterationInfo = $"{discoveryTime[u]}/-"
                 };
 
                 if (targetId.HasValue && u == targetId.Value)
                 {
-                    targetFound = true;
-                    // Не делаем yield break, чтобы позволить рекурсии свернуться и проставить черные цвета
+                    globalTargetFound = true;
                 }
 
+                // --- ОБРАБОТКА СОСЕДЕЙ ---
                 if (_adjacencyList.ContainsKey(u))
                 {
+                    // Сортировка для детерминированности
                     var neighbors = _adjacencyList[u].OrderBy(e => e.To).ToList();
+
                     foreach (var edge in neighbors)
                     {
-                        // Если нашли цель и хотим остановить исследование СОСЕДЕЙ (но текущий путь закроем)
-                        //if (targetFound && targetId.HasValue) break;
-
                         int v = edge.To;
-                        if (!visited.Contains(v)) // White
-                        {
-                            parentMap[v] = u;
 
+                        // Если сосед не посещен — это ребро дерева (Tree Edge)
+                        if (!visited.Contains(v))
+                        {
+                            parentMap[v] = u; // Запоминаем родителя
+
+                            // Анимация перехода по ребру (Tree Edge)
                             yield return new AlgorithmStep
                             {
                                 EdgeFromId = u,
@@ -479,25 +489,35 @@ namespace WpfAppGraph.Models
                                 NewEdgeType = EdgeType.TreeEdge
                             };
 
-                            // Рекурсивный вызов
-                            foreach (var step in DfsVisit(v)) yield return step;
+                            // Рекурсивный спуск
+                            foreach (var step in DfsVisit(v))
+                            {
+                                yield return step;
+                            }
                         }
                         else
                         {
-                            // === КЛАССИФИКАЦИЯ РЕБЕР (Бонус) ===
+                            // === КЛАССИФИКАЦИЯ ОСТАЛЬНЫХ РЕБЕР ===
                             EdgeType type = EdgeType.Default;
 
-                            if (!finished.Contains(v)) // Сосед Gray -> Back Edge (Обратное)
+                            // Если у соседа нет времени выхода, значит он сейчас в стеке рекурсии (Gray)
+                            // Это обратное ребро (цикл)
+                            if (!finishTime.ContainsKey(v))
                             {
                                 type = EdgeType.BackEdge;
                             }
-                            else // Сосед Black
+                            else
                             {
-                                // Если d[u] < d[v] -> Forward (Прямое), иначе Cross (Перекрестное)
-                                if (discoveryTime[u] < discoveryTime[v]) type = EdgeType.ForwardEdge;
-                                else type = EdgeType.CrossEdge;
+                                // Сосед уже обработан (Black).
+                                // Если мы вошли в u раньше, чем в v (d[u] < d[v]), то v — потомок. Прямое ребро.
+                                // Иначе это перекрестное ребро.
+                                if (discoveryTime[u] < discoveryTime[v])
+                                    type = EdgeType.ForwardEdge;
+                                else
+                                    type = EdgeType.CrossEdge;
                             }
 
+                            // Анимация классифицированного ребра
                             yield return new AlgorithmStep
                             {
                                 EdgeFromId = u,
@@ -508,22 +528,77 @@ namespace WpfAppGraph.Models
                     }
                 }
 
-                // === GRAY -> BLACK ===
-                finished.Add(u);
+                // --- ВЫХОД (Gray -> Black) ---
                 finishTime[u] = timer++;
                 structBuilder.Append($") ");
 
                 yield return new AlgorithmStep
                 {
                     VertexId = u,
-                    NewVertexState = VertexState.Finished, // Black
+                    NewVertexState = VertexState.Finished,
                     IterationInfo = $"{discoveryTime[u]}/{finishTime[u]}"
                 };
             }
 
-            FillResult(result, targetId, targetFound, structBuilder, parentMap, _adjacencyList);
-        }
+            // 4. Внешний цикл запуска (для несвязных графов)
+            foreach (var root in allVertices)
+            {
+                // Пропускаем уже посещенные вершины (из предыдущих компонент)
+                if (!visited.Contains(root))
+                {
+                    foreach (var step in DfsVisit(root))
+                    {
+                        yield return step;
+                    }
+                }
+            }
 
+            // 5. Формирование результатов
+            result.IsTargetFound = globalTargetFound;
+            result.ParenthesisStructure = structBuilder.ToString().Trim();
+
+            if (globalTargetFound && targetId.HasValue)
+            {
+                var tempPath = new List<int>();
+                int curr = targetId.Value;
+                tempPath.Add(curr);
+
+                // Двигаемся от цели к родителям
+                while (parentMap.ContainsKey(curr))
+                {
+                    int p = parentMap[curr];
+
+                    // Считаем вес ребра
+                    if (_adjacencyList.ContainsKey(p))
+                    {
+                        var edge = _adjacencyList[p].FirstOrDefault(e => e.To == curr);
+                        if (edge != null)
+                            result.PathLength += edge.Weight;
+                    }
+
+                    curr = p;
+                    tempPath.Add(curr);
+                }
+
+                // Проверяем валидность пути
+                bool pathIsValid = true;
+                if (startId.HasValue && curr != startId.Value)
+                {
+                    pathIsValid = false;
+                }
+
+                if (pathIsValid)
+                {
+                    tempPath.Reverse();
+                    result.Path = tempPath;
+                }
+                else
+                {
+                    result.Path.Clear();
+                    result.PathLength = 0;
+                }
+            }
+        }
         #endregion
 
         #region SCC algo

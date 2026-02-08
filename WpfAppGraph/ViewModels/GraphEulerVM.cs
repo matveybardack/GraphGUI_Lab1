@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using WpfAppGraph.Configs;
 using WpfAppGraph.Models;
 using WpfAppGraph.Models.Enums;
 using WpfAppGraph.Models.Structs;
@@ -39,6 +40,9 @@ namespace WpfAppGraph.ViewModels
             _sourceDrawVM = sourceDrawVM;
         }
 
+        /// <summary>
+        /// Синхронизация графа
+        /// </summary>
         [RelayCommand(CanExecute = nameof(CanInteract))]
         public void SyncGraph()
         {
@@ -83,7 +87,7 @@ namespace WpfAppGraph.ViewModels
             foreach (var step in steps)
             {
                 GraphCanvas.ApplyAlgorithmStep(step);
-                await Task.Delay(300); // Скорость анимации
+                await Task.Delay(Parameters.AnimationDelayMs); // Скорость анимации
             }
 
             if (result.IsSuccess)

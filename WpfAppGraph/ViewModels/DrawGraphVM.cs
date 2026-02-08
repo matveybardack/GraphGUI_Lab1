@@ -108,7 +108,6 @@ namespace WpfAppGraph.ViewModels
             {
                 ResetSelection(); //TODO: Добавление петли
             }
-            // 3. Если это второй клик (конец ребра)
             else
             {
                 OpenEdgeDialog(_firstSelectedVertex, clickedVertex);

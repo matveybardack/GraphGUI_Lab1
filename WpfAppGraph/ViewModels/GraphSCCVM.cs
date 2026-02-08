@@ -58,9 +58,6 @@ namespace WpfAppGraph.ViewModels
             GraphCanvas.ResetVisuals();
         }
 
-        /// <summary>
-        /// Запуск поиска сильно связных компонентов
-        /// </summary>
         [RelayCommand(CanExecute = nameof(CanInteract))]
         private async Task StartScc()
         {

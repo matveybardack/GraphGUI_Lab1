@@ -7,6 +7,6 @@ namespace WpfAppGraph.Models.Enums
     public enum EulerAlgorithmType
     {
         Fleury,
-        Hierholzer // Алгоритм Эйлера
+        Hierholzer // алгоритм Хирхольцера
     }
 }

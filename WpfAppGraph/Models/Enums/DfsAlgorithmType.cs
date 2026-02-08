@@ -4,10 +4,12 @@ using System.Text;
 
 namespace WpfAppGraph.Models.Enums
 {
-    // Тип алгоритма DFS для выбора пользователем
+    /// <summary>
+    /// Тип алгоритма DFS для выбора пользователем
+    /// </summary>
     public enum DfsAlgorithmType
     {
-        Iterative, // На стеке
-        Recursive  // Алгоритм 3 цветов
+        Iterative,
+        Recursive 
     }
 }

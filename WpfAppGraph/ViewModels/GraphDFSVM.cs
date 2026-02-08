@@ -55,6 +55,7 @@ namespace WpfAppGraph.ViewModels
         /// <summary>
         /// Выбор стартовой вершины
         /// </summary>
+        /// <param name="vertex"> Выбранная вершина </param>
         private void OnVertexClicked(VertexViewModel vertex)
         {
             if (IsAnimating) return;
@@ -85,7 +86,6 @@ namespace WpfAppGraph.ViewModels
         [RelayCommand(CanExecute = nameof(CanInteract))]
         public void SyncGraph()
         {
-            // Сохраняем ID, чтобы попытаться восстановить выбор после перерисовки
             int? prevStartId = _startVertex?.Id;
 
             GraphCanvas.CloneFrom(_sourceDrawVM.GraphCanvas);
@@ -129,7 +129,7 @@ namespace WpfAppGraph.ViewModels
             _startVertex?.State = VertexState.Selected;
             targetVertex?.State = VertexState.Target;
 
-            var resultData = new DfsResult();
+            var resultData = new SearchResult();
             IEnumerable<AlgorithmStep> steps;
 
             steps = (AlgorithmType) switch

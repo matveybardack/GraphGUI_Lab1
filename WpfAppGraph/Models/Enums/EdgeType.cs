@@ -4,6 +4,9 @@ using System.Text;
 
 namespace WpfAppGraph.Models.Enums
 {
+    /// <summary>
+    /// Тип ребра
+    /// </summary>
     public enum EdgeType
     {
         Default,

@@ -45,7 +45,7 @@
 
                     <GroupBox Header="Алгоритм" Margin="0,0,0,15" Padding="5">
                         <StackPanel>
-                            <RadioButton Content="Алгоритм Эйлера (Hierholzer)" 
+                            <RadioButton Content="Алгоритм Эйлера" 
                                          IsChecked="{Binding AlgorithmType, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Hierholzer}"
                                          Margin="0,5"/>
                             <RadioButton Content="Алгоритм Флёри" 
@@ -106,6 +106,7 @@
             </ScrollViewer>
         </Border>
 
+        <!-- Холст -->
         <Border Grid.Column="1" Background="White">
             <local:GraphCanvasControl DataContext="{Binding GraphCanvas}"/>
         </Border>
