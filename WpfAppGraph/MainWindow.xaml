@@ -33,6 +33,11 @@
         <DataTemplate DataType="{x:Type vm:GraphEulerVM}">
             <tabs:GraphEulerTab/>
         </DataTemplate>
+        
+        <!-- Фундаментальные циклы -->
+        <DataTemplate DataType="{x:Type vm:GraphFCycleVM}">
+            <tabs:GraphFCycleTab/>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>

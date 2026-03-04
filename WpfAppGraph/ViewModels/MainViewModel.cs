@@ -40,6 +40,12 @@ namespace WpfAppGraph.ViewModels
                 Header = "Циклы Эйлера",
                 ContentViewModel = new GraphEulerVM(sharedModel, DrawGraph)
             });
+
+            Tabs.Add(new TabItemViewModel
+            {
+                Header = "Фундаментальный цикл",
+                ContentViewModel = new GraphFCycleVM(sharedModel, DrawGraph)
+            });
         }
 
     }
