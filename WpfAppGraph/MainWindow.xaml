@@ -38,6 +38,12 @@
         <DataTemplate DataType="{x:Type vm:GraphFCycleVM}">
             <tabs:GraphFCycleTab/>
         </DataTemplate>
+        
+        <!-- Минимальное остовное дерево -->
+        <DataTemplate DataType="{x:Type vm:GraphMSTVM}">
+            <tabs:GraphMSTTab/>
+        </DataTemplate>
+                      
     </Window.Resources>
 
     <Grid>

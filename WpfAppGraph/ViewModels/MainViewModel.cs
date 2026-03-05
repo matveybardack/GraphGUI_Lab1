@@ -46,6 +46,12 @@ namespace WpfAppGraph.ViewModels
                 Header = "Фундаментальный цикл",
                 ContentViewModel = new GraphFCycleVM(sharedModel, DrawGraph)
             });
+
+            Tabs.Add(new TabItemViewModel
+            {
+                Header = "Минимальный остов",
+                ContentViewModel = new GraphMSTVM(sharedModel, DrawGraph)
+            });
         }
 
     }
