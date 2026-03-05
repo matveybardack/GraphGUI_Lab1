@@ -9,9 +9,9 @@ namespace WpfAppGraph.Models
         #region Создание матриц
 
         /// <summary>
-        /// Построение матрицы смежности
+        /// Формирует матрицу смежности графа.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Двумерный массив весов рёбер (PositiveInfinity для отсутствующих рёбер).</returns>
         public double[,] GetAdjacencyMatrix()
         {
             var vertices = GetVertices();
@@ -44,9 +44,9 @@ namespace WpfAppGraph.Models
         }
 
         /// <summary>
-        /// Построение транспонированной матрицы смежности.
+        /// Формирует транспонированную матрицу смежности.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Матрица с переставленными строками и столбцами относительно исходной.</returns>
         public double[,] GetTransposedAdjacencyMatrix()
         {
             double[,] original = GetAdjacencyMatrix();
@@ -65,18 +65,19 @@ namespace WpfAppGraph.Models
         #endregion
 
         #region SCC algo
+
         /// <summary>
-        /// Поиск сильносвязанных компонентов (SCC) алгоритмом Косарайю.
+        /// Поиск сильносвязных компонентов алгоритмом Косарайю.
         /// </summary>
-        /// <param name="result">Список списков из групп компонентов</param>
-        /// <returns>Ленивая коллекция шагов для анимации</returns>
+        /// <param name="result">Контейнер для результата: список компонент связности.</param>
+        /// <returns>Последовательность шагов для визуализации алгоритма.</returns>
         public IEnumerable<AlgorithmStep> RunFindStronglyConnectedComponents(SccResult result)
         {
             var vertices = GetVertices();
             var visited = new HashSet<int>();
             var stack = new Stack<int>();
 
-            // Первый проход: DFS на оригинальном графе
+            // Первый проход: порядок завершения вершин
             foreach (var v in vertices)
             {
                 if (!visited.Contains(v))
@@ -92,7 +93,7 @@ namespace WpfAppGraph.Models
 
             visited.Clear();
 
-            // Второй проход: DFS по транспонированному графу
+            // Второй проход: выделение компонент на транспонированном графе
             while (stack.Count > 0)
             {
                 int v = stack.Pop();
@@ -117,7 +118,7 @@ namespace WpfAppGraph.Models
                 }
             }
 
-            // Классификация ребер по группам компонентов
+            // Классификация рёбер: внутри компонент и между компонентами
             var vertexToComponentIndex = new Dictionary<int, int>();
             for (int i = 0; i < result.Components.Count; i++)
             {
@@ -130,7 +131,6 @@ namespace WpfAppGraph.Models
             foreach (var kvp in _adjacencyList)
             {
                 int u = kvp.Key;
-                // Если вершина не попала ни в один компонент (на всякий)
                 if (!vertexToComponentIndex.ContainsKey(u)) continue;
 
                 foreach (var edge in kvp.Value)
@@ -138,7 +138,6 @@ namespace WpfAppGraph.Models
                     int v = edge.To;
                     if (vertexToComponentIndex.ContainsKey(v))
                     {
-                        // лежат ли U и V в одном компоненте
                         if (vertexToComponentIndex[u] == vertexToComponentIndex[v])
                         {
                             yield return new AlgorithmStep
@@ -163,11 +162,11 @@ namespace WpfAppGraph.Models
         }
 
         /// <summary>
-        /// Вспомогательный метод для прямого прохода
+        /// Рекурсивный обход для заполнения стека порядком завершения вершин.
         /// </summary>
-        /// <param name="u"> вершина </param>
-        /// <param name="visited"> множество посещенных </param>
-        /// <param name="stack"> стек посещений </param>
+        /// <param name="u">Текущая вершина обхода.</param>
+        /// <param name="visited">Множество уже посещённых вершин.</param>
+        /// <param name="stack">Стек для сохранения порядка завершения.</param>
         private void FillOrder(int u, HashSet<int> visited, Stack<int> stack)
         {
             visited.Add(u);
@@ -181,14 +180,14 @@ namespace WpfAppGraph.Models
         }
 
         /// <summary>
-        /// Вспомогательный метод для обратного прохода по матрице
+        /// Обход транспонированного графа для выделения компоненты связности.
         /// </summary>
-        /// <param name="u"> вершина </param>
-        /// <param name="visited"> множество посещенных </param>
-        /// <param name="component"> группа компонентов </param>
-        /// <param name="matrixT"> транспанированная матрица </param>
-        /// <param name="allVertices"></param>
-        /// <param name="idToIndex"></param>
+        /// <param name="u">Стартовая вершина обхода.</param>
+        /// <param name="visited">Множество уже посещённых вершин.</param>
+        /// <param name="component">Список для сбора вершин текущей компоненты.</param>
+        /// <param name="matrixT">Транспонированная матрица смежности.</param>
+        /// <param name="allVertices">Список всех вершин графа (для индексации).</param>
+        /// <param name="idToIndex">Отображение ID вершины в индекс матрицы.</param>
         private void DfsTransposed(int u, HashSet<int> visited, List<int> component, double[,] matrixT, List<int> allVertices, Dictionary<int, int> idToIndex)
         {
             visited.Add(u);
@@ -209,6 +208,7 @@ namespace WpfAppGraph.Models
                 }
             }
         }
+
         #endregion
     }
 }

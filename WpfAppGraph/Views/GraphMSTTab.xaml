@@ -93,10 +93,18 @@
                     <Separator Margin="0,20"/>
 
                     <StackPanel>
-                        <TextBlock Text="Легенда:" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <TextBlock Text="Легенда Ребер:" FontWeight="Bold" Margin="0,10,0,5"/>
+
+                        <!-- Синий (TreeEdge): рёбра, включённые в минимальное остовное дерево -->
                         <StackPanel Orientation="Horizontal" Margin="0,2">
-                            <Rectangle Width="20" Height="3" Fill="Red"/>
-                            <TextBlock Text=" - Пройденное ребро" FontSize="11" Margin="5,0"/>
+                            <Rectangle Width="20" Height="3" Fill="Blue"/>
+                            <TextBlock Text=" - Ребро остова (MST)" FontSize="11" Margin="5,0"/>
+                        </StackPanel>
+
+                        <!-- Зелёный (ForwardEdge): ребро, рассматриваемое алгоритмом Крускала -->
+                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="20" Height="3" Fill="Green"/>
+                            <TextBlock Text=" - Рассматриваемое ребро" FontSize="11" Margin="5,0"/>
                         </StackPanel>
                     </StackPanel>
 

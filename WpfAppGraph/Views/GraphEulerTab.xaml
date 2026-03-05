@@ -98,9 +98,7 @@
                             <Rectangle Width="20" Height="3" Fill="Red"/>
                             <TextBlock Text=" - Пройденное ребро" FontSize="11" Margin="5,0"/>
                         </StackPanel>
-                        <TextBlock Text="Флёри: идет последовательно." FontSize="10" Foreground="Gray" Margin="0,5,0,0"/>
-                        <TextBlock Text="Эйлер: строит путь с конца (стек)." FontSize="10" Foreground="Gray"/>
-                    </StackPanel>
+                   </StackPanel>
 
                 </StackPanel>
             </ScrollViewer>

@@ -9,9 +9,11 @@ namespace WpfAppGraph.Models
         #region Euler cycle
 
         /// <summary>
-        /// Проверяет, является ли граф Эйлеровым (содержит цикл или путь).
-        /// Возвращает стартовую вершину или -1, если условие не выполнено.
+        /// Проверяет граф на наличие Эйлерова цикла или пути.
         /// </summary>
+        /// <param name="isCycle">Признак наличия цикла (true) или пути (false).</param>
+        /// <param name="message">Текстовое описание результата проверки.</param>
+        /// <returns>Индекс стартовой вершины для построения маршрута, или -1 при ошибке.</returns>
         public int CheckEulerian(out bool isCycle, out string message)
         {
             isCycle = false;
@@ -22,7 +24,6 @@ namespace WpfAppGraph.Models
                 return -1;
             }
 
-            // 1. Получаем степени вершин и список активных вершин (имеющих ребра)
             var degrees = CalculateDegrees(out bool isDirected, out int totalEdges);
 
             if (totalEdges == 0)
@@ -31,7 +32,6 @@ namespace WpfAppGraph.Models
                 return -1;
             }
 
-            // Вершины, у которых есть хотя бы одно ребро (входящее или исходящее)
             var activeVertices = vertices.Where(v =>
                 (degrees.ContainsKey(v) && (degrees[v].In > 0 || degrees[v].Out > 0))
             ).ToList();
@@ -42,15 +42,12 @@ namespace WpfAppGraph.Models
                 return -1;
             }
 
-            // 2. Проверка связности (Важно! Все ребра должны быть в одной компоненте)
-            // Запускаем BFS от первой активной вершины
             if (!IsGraphConnectedBasedOnEdges(activeVertices[0], activeVertices.Count, isDirected))
             {
                 message = "Граф несвязен (содержит несколько компонент с ребрами).";
                 return -1;
             }
 
-            // 3. Проверка степеней
             if (isDirected)
             {
                 return CheckDirectedDegrees(vertices, degrees, out isCycle, out message);
@@ -61,24 +58,26 @@ namespace WpfAppGraph.Models
             }
         }
 
-        // --- Алгоритм Флёри (Fleury) ---
+        /// <summary>
+        /// Построение Эйлерова пути/цикла алгоритмом Флёри.
+        /// </summary>
+        /// <param name="result">Контейнер для результата выполнения.</param>
+        /// <returns>Последовательность шагов для визуализации алгоритма.</returns>
         public IEnumerable<AlgorithmStep> RunFleuryAlgorithm(EulerResult result)
         {
-            // Флёри классически работает на неориентированных графах.
-            // На ориентированных понятие "мост" сложнее, и жадный алгоритм может зайти в тупик.
+            // Алгоритм предназначен для неориентированных графов
             int startNode = CheckEulerian(out bool isCycle, out string msg);
             result.StatusMessage = msg;
 
             if (startNode == -1) yield break;
 
-            // Проверка на ориентированность (предупреждение или ограничение)
             bool isDirected = _adjacencyList.Values.Any(l => l.Any(e => e.IsDirected));
             if (isDirected)
             {
                 result.StatusMessage = "Алгоритм Флёри не гарантирует результат на ориентированном графе. Рекомендуется Хирхольцер.";
             }
 
-            // Клонируем структуру смежности, так как будем удалять ребра
+            // Рабочая копия графа для удаления рёбер
             var tempAdj = CloneAdjacencyList();
             var path = new List<int> { startNode };
             int u = startNode;
@@ -96,7 +95,6 @@ namespace WpfAppGraph.Models
                 GraphEdge chosenEdge = null;
                 int v = -1;
 
-                // Если есть только один путь, выбора нет
                 if (neighbors.Count == 1)
                 {
                     chosenEdge = neighbors[0];
@@ -104,7 +102,7 @@ namespace WpfAppGraph.Models
                 }
                 else
                 {
-                    // Ищем ребро, которое НЕ является мостом
+                    // Выбор ребра, не являющегося мостом
                     foreach (var edge in neighbors)
                     {
                         if (!IsBridge(u, edge, tempAdj, isDirected))
@@ -115,7 +113,7 @@ namespace WpfAppGraph.Models
                         }
                     }
 
-                    // Если все ребра - мосты (такое бывает в конце пути), берем любое
+                    // Все рёбра — мосты: выбор произвольного
                     if (chosenEdge == null)
                     {
                         chosenEdge = neighbors[0];
@@ -123,18 +121,17 @@ namespace WpfAppGraph.Models
                     }
                 }
 
-                // Анимация прохода по ребру
                 yield return new AlgorithmStep
                 {
                     EdgeFromId = u,
                     EdgeToId = v,
-                    NewEdgeType = EdgeType.BackEdge, // Красим как пройденное
+                    NewEdgeType = EdgeType.BackEdge,
                     VertexId = v,
                     NewVertexState = VertexState.Active,
                     IterationInfo = $"Переход {u}->{v}"
                 };
 
-                // "Сжигаем" мост за собой
+                // Удаление пройденного ребра
                 RemoveEdgeFromTemp(tempAdj, u, v, chosenEdge);
 
                 u = v;
@@ -146,7 +143,11 @@ namespace WpfAppGraph.Models
             result.StatusMessage += " (Завершено)";
         }
 
-        // --- Алгоритм Хирхольцера (Hierholzer) ---
+        /// <summary>
+        /// Построение Эйлерова пути/цикла алгоритмом Хирхольцера.
+        /// </summary>
+        /// <param name="result">Контейнер для результата выполнения.</param>
+        /// <returns>Последовательность шагов для визуализации алгоритма.</returns>
         public IEnumerable<AlgorithmStep> RunHierholzerAlgorithm(EulerResult result)
         {
             int startNode = CheckEulerian(out bool isCycle, out string msg);
@@ -172,21 +173,17 @@ namespace WpfAppGraph.Models
 
                 if (tempAdj.ContainsKey(u) && tempAdj[u].Count > 0)
                 {
-                    // 1. Идем вперед: берем первое попавшееся ребро
                     var edge = tempAdj[u][0];
                     int v = edge.To;
 
                     stack.Push(v);
-
-                    // Удаляем ребро из временного графа
                     RemoveEdgeFromTemp(tempAdj, u, v, edge);
 
-                    // Анимация: спуск вглубь
                     yield return new AlgorithmStep
                     {
                         EdgeFromId = u,
                         EdgeToId = v,
-                        NewEdgeType = EdgeType.BackEdge, // Помечаем используемым
+                        NewEdgeType = EdgeType.BackEdge,
                         VertexId = v,
                         NewVertexState = VertexState.Active,
                         IterationInfo = "Вглубь"
@@ -194,32 +191,37 @@ namespace WpfAppGraph.Models
                 }
                 else
                 {
-                    // 2. Тупик: переносим вершину из стека в итоговый путь
+                    // Фиксация вершины в итоговом маршруте
                     int finishedNode = stack.Pop();
                     circuit.Add(finishedNode);
 
-                    // Анимация: возврат/добавление в цикл
                     yield return new AlgorithmStep
                     {
                         VertexId = finishedNode,
-                        NewVertexState = VertexState.Finished, // Помечаем как обработанную
+                        NewVertexState = VertexState.Finished,
                         IterationInfo = "В цикл"
                     };
                 }
             }
 
-            // Хирхольцер строит путь с конца, разворачиваем
+            // Инверсия пути (построение с конца)
             circuit.Reverse();
             result.Path = circuit;
             result.IsSuccess = true;
             result.StatusMessage += " (Завершено)";
         }
+        #endregion
+        #region Вспомогательные структуры и методы
 
-        #region Helpers & Validations
-
-        // Структура для подсчета степеней
+        // Вспомогательная структура для учёта степеней вершин
         private class VertexDegree { public int In; public int Out; }
 
+        /// <summary>
+        /// Вычисляет полустепени захода и исхода для всех вершин графа.
+        /// </summary>
+        /// <param name="isDirected">Признак ориентированности графа.</param>
+        /// <param name="totalEdges">Общее количество рёбер.</param>
+        /// <returns>Словарь степеней по идентификаторам вершин.</returns>
         private Dictionary<int, VertexDegree> CalculateDegrees(out bool isDirected, out int totalEdges)
         {
             var degrees = new Dictionary<int, VertexDegree>();
@@ -240,12 +242,20 @@ namespace WpfAppGraph.Models
                     if (degrees.ContainsKey(edge.To))
                         degrees[edge.To].In++;
                     else
-                        degrees[edge.To] = new VertexDegree { In = 1 }; // Защита, если вершины нет в keys
+                        degrees[edge.To] = new VertexDegree { In = 1 };
                 }
             }
             return degrees;
         }
 
+        /// <summary>
+        /// Проверка условий Эйлера для ориентированного графа.
+        /// </summary>
+        /// <param name="vertices">Список вершин графа.</param>
+        /// <param name="degrees">Словарь степеней вершин.</param>
+        /// <param name="isCycle">Признак наличия цикла (true) или пути (false).</param>
+        /// <param name="message">Текстовое описание результата.</param>
+        /// <returns>Индекс стартовой вершины, или -1 при невозможности построения.</returns>
         private int CheckDirectedDegrees(List<int> vertices, Dictionary<int, VertexDegree> degrees, out bool isCycle, out string message)
         {
             int startNodes = 0;
@@ -275,14 +285,13 @@ namespace WpfAppGraph.Models
             if (startNodes == 0 && endNodes == 0)
             {
                 isCycle = true;
-                message = "Найден Эйлеров цикл (Directed).";
-                // Для цикла стартом может быть любая вершина с исходящими ребрами
+                message = "Найден Эйлеров цикл";
                 return vertices.FirstOrDefault(v => degrees[v].Out > 0);
             }
             else if (startNodes == 1 && endNodes == 1)
             {
                 isCycle = false;
-                message = "Найден Эйлеров путь (Directed).";
+                message = "Найден Эйлеров путь";
                 return startNodeCandidate;
             }
 
@@ -291,18 +300,23 @@ namespace WpfAppGraph.Models
             return -1;
         }
 
+        /// <summary>
+        /// Проверка условий Эйлера для неориентированного графа.
+        /// </summary>
+        /// <param name="vertices">Список вершин графа.</param>
+        /// <param name="degrees">Словарь степеней вершин.</param>
+        /// <param name="isCycle">Признак наличия цикла (true) или пути (false).</param>
+        /// <param name="message">Текстовое описание результата.</param>
+        /// <returns>Индекс стартовой вершины, или -1 при невозможности построения.</returns>
         private int CheckUndirectedDegrees(List<int> vertices, Dictionary<int, VertexDegree> degrees, out bool isCycle, out string message)
         {
-            // В неориентированном графе (в модели) ребра обычно дублируются (A->B и B->A).
-            // Но degrees.Out считает количество записей в списке смежности, что равно реальной степени вершины.
-
             int oddCount = 0;
             int startNodeCandidate = -1;
             int firstNodeWithEdges = -1;
 
             foreach (var v in vertices)
             {
-                int d = degrees[v].Out; // degree
+                int d = degrees[v].Out;
                 if (d > 0 && firstNodeWithEdges == -1) firstNodeWithEdges = v;
 
                 if (d % 2 != 0)
@@ -330,7 +344,13 @@ namespace WpfAppGraph.Models
             return -1;
         }
 
-        // Проверка связности только по ребрам (игнорируем изолированные вершины)
+        /// <summary>
+        /// Проверка слабой связности графа по рёбрам (игнорируя изолированные вершины).
+        /// </summary>
+        /// <param name="startNode">Стартовая вершина для обхода.</param>
+        /// <param name="expectedCount">Ожидаемое количество активных вершин.</param>
+        /// <param name="isDirected">Признак ориентированности графа.</param>
+        /// <returns>Признак связности всех рёбер в одной компоненте.</returns>
         private bool IsGraphConnectedBasedOnEdges(int startNode, int expectedCount, bool isDirected)
         {
             var visited = new HashSet<int>();
@@ -339,16 +359,11 @@ namespace WpfAppGraph.Models
             queue.Enqueue(startNode);
             visited.Add(startNode);
 
-            // Для неориентированного графа BFS прост.
-            // Для ориентированного, чтобы проверить слабую связность (достаточную для Эйлера при правильных степенях),
-            // нужно игнорировать направление ребер.
-
             while (queue.Count > 0)
             {
                 int u = queue.Dequeue();
 
-                // Проходим по всем соседям (как исходящим, так и входящим для проверки слабой связности)
-                // Исходящие:
+                // Обход исходящих рёбер
                 if (_adjacencyList.ContainsKey(u))
                 {
                     foreach (var edge in _adjacencyList[u])
@@ -361,14 +376,12 @@ namespace WpfAppGraph.Models
                     }
                 }
 
-                // Входящие (дорогой поиск, но нужен для проверки слабой связности, если граф ориентирован)
-                // Если граф неориентирован, они уже учтены в списках смежности (так как дублируются)
+                // Учёт входящих рёбер для слабой связности ориентированного графа
                 if (isDirected)
                 {
                     foreach (var kvp in _adjacencyList)
                     {
-                        if (visited.Contains(kvp.Key)) continue; // Уже посетили источник
-                        // Если есть ребро от kvp.Key к u
+                        if (visited.Contains(kvp.Key)) continue;
                         if (kvp.Value.Any(e => e.To == u))
                         {
                             visited.Add(kvp.Key);
@@ -381,8 +394,10 @@ namespace WpfAppGraph.Models
             return visited.Count == expectedCount;
         }
 
-        // --- Вспомогательные для алгоритмов ---
-
+        /// <summary>
+        /// Создаёт глубокую копию списка смежности для временных вычислений.
+        /// </summary>
+        /// <returns>Клонированная структура смежности.</returns>
         private Dictionary<int, List<GraphEdge>> CloneAdjacencyList()
         {
             var clone = new Dictionary<int, List<GraphEdge>>();
@@ -391,59 +406,69 @@ namespace WpfAppGraph.Models
                 clone[kvp.Key] = new List<GraphEdge>();
                 foreach (var e in kvp.Value)
                 {
-                    // Важно копировать свойства, но для алгоритма нам нужны ссылки или копии.
-                    // Здесь делаем копию объекта ребра.
                     clone[kvp.Key].Add(new GraphEdge(e.From, e.To, e.Weight, e.IsDirected));
                 }
             }
             return clone;
         }
 
+        /// <summary>
+        /// Удаляет ребро из временной структуры смежности.
+        /// </summary>
+        /// <param name="adj">Временный список смежности.</param>
+        /// <param name="u">Исходящая вершина.</param>
+        /// <param name="v">Целевая вершина.</param>
+        /// <param name="specificEdge">Удаляемое ребро.</param>
         private void RemoveEdgeFromTemp(Dictionary<int, List<GraphEdge>> adj, int u, int v, GraphEdge specificEdge)
         {
-            // Удаляем u -> v
             if (adj.ContainsKey(u))
             {
-                // Удаляем конкретный экземпляр или первое совпадение по ID/структуре
                 var toRemove = adj[u].FirstOrDefault(e => e.To == v && e.Weight == specificEdge.Weight);
                 if (toRemove != null) adj[u].Remove(toRemove);
             }
 
-            // Если граф неориентированный, удаляем обратное ребро v -> u
+            // Удаление обратного ребра для неориентированного графа
             if (!specificEdge.IsDirected && adj.ContainsKey(v))
             {
-                var backEdge = adj[v].FirstOrDefault(e => e.To == u); // Вес должен совпадать, если это мультиграф
+                var backEdge = adj[v].FirstOrDefault(e => e.To == u);
                 if (backEdge != null) adj[v].Remove(backEdge);
             }
         }
 
-        // Проверка на мост для Флёри
+        /// <summary>
+        /// Проверка ребра на принадлежность к мостам (алгоритм Флёри).
+        /// </summary>
+        /// <param name="u">Исходящая вершина.</param>
+        /// <param name="edge">Проверяемое ребро.</param>
+        /// <param name="adj">Временный список смежности.</param>
+        /// <param name="isDirected">Признак ориентированности графа.</param>
+        /// <returns>Признак того, что ребро является мостом.</returns>
         private bool IsBridge(int u, GraphEdge edge, Dictionary<int, List<GraphEdge>> adj, bool isDirected)
         {
             int v = edge.To;
 
-            // 1. Считаем достижимость до удаления
             int countBefore = CountReachable(u, adj);
 
-            // 2. Временно удаляем ребро
             RemoveEdgeFromTemp(adj, u, v, edge);
 
-            // 3. Считаем после
             int countAfter = CountReachable(u, adj);
 
-            // 4. Возвращаем ребро обратно (важно вернуть корректно)
+            // Восстановление ребра после проверки
             adj[u].Add(edge);
             if (!isDirected && adj.ContainsKey(v))
             {
-                // Создаем обратное, так как мы его удалили. 
-                // В идеале нужно было сохранить и обратное, но для простоты создадим копию с обратными координатами
                 adj[v].Add(new GraphEdge(v, u, edge.Weight, edge.IsDirected));
             }
 
-            // Если количество достижимых вершин уменьшилось -> это мост
             return countAfter < countBefore;
         }
 
+        /// <summary>
+        /// Подсчёт количества вершин, достижимых из заданной.
+        /// </summary>
+        /// <param name="start">Стартовая вершина обхода.</param>
+        /// <param name="adj">Структура смежности для обхода.</param>
+        /// <returns>Количество достижимых вершин.</returns>
         private int CountReachable(int start, Dictionary<int, List<GraphEdge>> adj)
         {
             var visited = new HashSet<int>();
@@ -468,7 +493,6 @@ namespace WpfAppGraph.Models
             }
             return visited.Count;
         }
-        #endregion
         #endregion
     }
 }
