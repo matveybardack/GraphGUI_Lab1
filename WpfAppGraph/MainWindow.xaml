@@ -43,6 +43,11 @@
         <DataTemplate DataType="{x:Type vm:GraphMSTVM}">
             <tabs:GraphMSTTab/>
         </DataTemplate>
+        
+        <!-- Алгоритмы обхода дерева -->
+        <DataTemplate DataType="{x:Type vm:TreeFSVM}">
+            <tabs:GraphTreeTab/>
+        </DataTemplate>
                       
     </Window.Resources>
 

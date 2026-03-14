@@ -52,6 +52,12 @@ namespace WpfAppGraph.ViewModels
                 Header = "Минимальный остов",
                 ContentViewModel = new GraphMSTVM(sharedModel, DrawGraph)
             });
+
+            Tabs.Add(new TabItemViewModel
+            {
+                Header = "Обход дерева",
+                ContentViewModel = new TreeFSVM(sharedModel, DrawGraph)
+            });
         }
 
     }
